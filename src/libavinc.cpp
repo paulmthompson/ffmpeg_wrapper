@@ -170,7 +170,12 @@ AVFormatContext avformat_open_input(const std::string& url, const libav::AVDicti
 
 int av_seek_frame(AVFormatContext& ctx, flicks time, int idx, int flags)
 {
-    auto time_base = 0 <= idx ? ctx->streams[idx]->time_base : AV_TIME_BASE_Q;
+    ::AVRational time_base;
+    if (0 <= idx) {
+        time_base = ctx->streams[idx]->time_base;
+    } else {
+        time_base =  ::av_get_time_base_q();
+    }
     return ::av_seek_frame(ctx.get(), idx, av_rescale(time, time_base), flags);
 }
 

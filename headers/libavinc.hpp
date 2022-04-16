@@ -40,6 +40,12 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#if defined _WIN32 || defined __CYGWIN__
+	#define DLLOPT __declspec(dllexport)
+#else
+	#define DLLOPT __attribute__((visibility("default")))
+#endif
+
 #include <chrono>
 #include <functional>
 #include <iostream>
@@ -85,7 +91,7 @@ int av_read_frame(::AVFormatContext* ctx, ::AVPacket* pkt);
 
 // AVPacket is extended to enable ranged for loop
 using AVPacketBase = std::unique_ptr<::AVPacket, void (*)(::AVPacket*)>;
-class AVPacket : public AVPacketBase {
+class DLLOPT AVPacket : public AVPacketBase {
 private:
     ::AVFormatContext* fmtCtx = nullptr;
     // From Video
@@ -153,7 +159,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 using AVFormatContextBase = std::unique_ptr<::AVFormatContext, void (*)(::AVFormatContext*)>;
 using AVCodecContext = std::unique_ptr<::AVCodecContext, void (*)(::AVCodecContext*)>;
-class AVFormatContext : public AVFormatContextBase {
+class DLLOPT AVFormatContext : public AVFormatContextBase {
 public:
     AVFormatContext()
         : AVFormatContextBase(nullptr, [](::AVFormatContext*) {})
