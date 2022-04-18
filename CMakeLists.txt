@@ -17,6 +17,10 @@ include(CPack)
 set(FFMPEG_PATH "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\lib")
 set(FFMPEG_INCLUDE "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\include")
 
+#set(ENV{CMAKE_PREFIX_PATH},"$ENV{CMAKE_PREFIX_PATH};${FFMPEG_PATH}")
+#find_package(PkgConfig REQUIRED)
+#pkg_check_modules(ffmpeg REQUIRED avutil)
+
 find_library(AVCODEC_LIBRARY avcodec HINTS ${FFMPEG_PATH})
 find_library(AVFORMAT_LIBRARY avformat HINTS ${FFMPEG_PATH})
 find_library(AVUTIL_LIBRARY avutil HINTS ${FFMPEG_PATH})
@@ -31,11 +35,13 @@ set(Sources
         src/videodecoder.cpp
         src/libavinc.cpp
         ffmpeg_wrapper.cpp
+        src/videoencoder.cpp
 )
 
 set(Headers
     headers/videodecoder.h
     headers/libavinc.hpp
+    headers/videoencoder.h
 )
 
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})

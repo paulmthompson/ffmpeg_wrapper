@@ -40,6 +40,7 @@ void VideoDecoder::createMedia(std::string filename) {
     this->width = media->streams[0]->codecpar->width;
 
     this->last_decoded_frame = frame_count;
+    
 }
 
 int VideoDecoder::getFrameCount() const

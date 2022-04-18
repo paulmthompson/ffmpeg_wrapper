@@ -158,7 +158,21 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 using AVFormatContextBase = std::unique_ptr<::AVFormatContext, void (*)(::AVFormatContext*)>;
-using AVCodecContext = std::unique_ptr<::AVCodecContext, void (*)(::AVCodecContext*)>;
+using AVCodecContextBase = std::unique_ptr<::AVCodecContext, void (*)(::AVCodecContext*)>;
+class DLLOPT AVCodecContext : public AVCodecContextBase {
+public:
+    AVCodecContext()
+        : AVCodecContextBase(nullptr, [](::AVCodecContext*) {})
+        {
+        }
+
+    template <class T>
+    AVCodecContext(::AVCodecContext* Ctx, T deleter)
+        : AVCodecContextBase(Ctx,deleter)
+        {
+
+        }
+};
 class DLLOPT AVFormatContext : public AVFormatContextBase {
 public:
     AVFormatContext()
@@ -315,7 +329,7 @@ void bind_hardware_frames_context(AVCodecContext& ctx, int width, int height, ::
 
 void bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int height, ::AVPixelFormat sw_pix_fmt);
 
-void hardware_encode(FILE * pFile,AVCodecContext& ctx,AVFrame& hw_frame, AVFrame& sw_frame);
+void hardware_encode(FILE * pFile,AVCodecContext& ctx, AVFrame& sw_frame);
 
 } // End namespace
 

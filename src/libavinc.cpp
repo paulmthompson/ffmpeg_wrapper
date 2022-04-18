@@ -404,8 +404,11 @@ void bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int heig
      bind_hardware_frames_context(ctx, width, height, AV_PIX_FMT_CUDA,sw_pix_fmt);
 }
 
-void hardware_encode(FILE * pFile,AVCodecContext& ctx,AVFrame& hw_frame, AVFrame& sw_frame)
+void hardware_encode(FILE * pFile,AVCodecContext& ctx, AVFrame& sw_frame)
 {
+
+    auto hw_frame = libav::av_frame_alloc();
+
     const ::AVCodec* codec = ::avcodec_find_encoder_by_name("h264_nvenc");
     ::av_hwframe_get_buffer(ctx->hw_frames_ctx,hw_frame.get(),0);
 
