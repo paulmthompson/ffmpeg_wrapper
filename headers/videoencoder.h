@@ -39,6 +39,7 @@ private:
     int width;
     int height;
     int fps;
+    
     std::string encoder_name;
     std::string file_path;
     std::string file_name;

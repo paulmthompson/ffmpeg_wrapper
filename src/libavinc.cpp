@@ -379,7 +379,7 @@ AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name
     videoStream->codecpar->width = width;
     videoStream->codecpar->height = height;
     videoStream->codecpar->format = pix_fmt;
-    videoStream->codecpar->bit_rate = 2000 * 1000;
+    //videoStream->codecpar->bit_rate = 2000 * 1000; // setting this really ****s it up
     
     ::avcodec_parameters_to_context(codecCtx.get(),videoStream->codecpar);
 
@@ -438,14 +438,13 @@ void hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AVFrame& sw_fra
 {
 
     auto hw_frame = libav::av_frame_alloc();
-
-    const ::AVCodec* codec = ::avcodec_find_encoder_by_name("h264_nvenc");
     auto err = ::av_hwframe_get_buffer(ctx->hw_frames_ctx,hw_frame.get(),0);
     if (err) {
         std::cout << "Could not get hardware frame buffer";
     }
 
-    ::avcodec_open2(ctx.get(),codec,NULL);
+    const ::AVCodec* codec = ::avcodec_find_encoder_by_name("h264_nvenc");
+    ::avcodec_open2(ctx.get(),codec,NULL); // Why does this have to happen with every write?
 
     err = ::av_hwframe_transfer_data(hw_frame.get(),sw_frame.get(),0);
     if (err) {
@@ -458,10 +457,10 @@ void hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AVFrame& sw_fra
 
     ::avcodec_receive_packet(ctx.get(),pkt.get());
 
-    pkt->pts = 2000 * frame_count;
+    pkt->pts = 2000 * frame_count; // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
     pkt->dts = pkt->pts;
     pkt->duration = 2000;
-    //fwrite(pkt->data,pkt->size,1,pFile);
+
     ::av_write_frame(media.get(), pkt.get());
 
     ::av_packet_unref(pkt.get());
