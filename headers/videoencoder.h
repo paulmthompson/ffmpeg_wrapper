@@ -30,8 +30,9 @@ public:
 
 private:
     libav::AVFormatContext media;
-    libav::AVCodecContext codecCtx; //This is a unique_ptr
-    libav::AVFrame frame; //This is a unique ptr
+    libav::AVCodecContext codecCtx; 
+    //libav::AVStream;
+    libav::AVFrame frame; 
 
     int frame_count;
     int width;

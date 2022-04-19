@@ -71,6 +71,7 @@ void VideoEncoder::openFile(std::string filename) {
 void VideoEncoder::closeFile() {
     //::fclose(this->file_out);
     ::av_write_trailer(this->media.get());
+    ::avio_closep(&media->pb);
 }
 
 void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {

@@ -359,6 +359,7 @@ int avcodec_send_packet(AVFormatContext& fmtCtx,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Modified from instructions at https://habr.com/en/company/intel/blog/575632/
+// See also https://github.com/kmsquire/split_video/blob/master/split_video.c
 AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt)
 {
     const ::AVCodec* codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
@@ -385,7 +386,7 @@ AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name
     codecCtx->time_base = ::AVRational({1,fps});
     codecCtx->framerate = ::AVRational({fps,1});
 
-    ::av_opt_set(codecCtx.get(),"preset","ultrafast",0);
+    ::av_opt_set(codecCtx.get(),"preset","medium",0);
 
     ::avcodec_parameters_from_context(videoStream->codecpar, codecCtx.get());
 
@@ -393,14 +394,6 @@ AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name
     ::avio_open(&media->pb, test_file.c_str(), AVIO_FLAG_WRITE);
 
     ::avformat_write_header(media.get(), NULL);
-    /*
-    codecCtx->width = width;
-    codecCtx->height = height;
-    codecCtx->time_base = ::AVRational({1,fps});
-    codecCtx->framerate = ::AVRational({fps,1});
-    codecCtx->sample_aspect_ratio = ::AVRational({1,1});
-    codecCtx->pix_fmt = pix_fmt;
-    */
 
     return codecCtx;
 }

@@ -199,6 +199,23 @@ int av_seek_frame(AVFormatContext& ctx, flicks time, int idx = -1, int flags = 0
 AVFormatContext avformat_open_output(const std::string& url, std::string format_name = std::string());
 
 ///////////////////////////////////////////////////////////////////////////////
+using AVStreamBase = std::unique_ptr<::AVStream, void (*)(::AVStream*)>;
+
+class DLLOPT AVStream : public AVStreamBase {
+public:
+    AVStream()
+        : AVStreamBase(nullptr, [](::AVStream*) {})
+        {
+        }
+
+    template <class T>
+    AVStream(::AVStream* Ctx, T deleter)
+        : AVStreamBase(Ctx,deleter)
+        {
+
+        }
+};
+
 int avformat_new_stream(AVFormatContext& fmtCtx, const ::AVCodecParameters* par);
 
 int av_interleaved_write_frame(AVFormatContext& fmtCtx, int stream_index, const ::AVPacket& pkt);
