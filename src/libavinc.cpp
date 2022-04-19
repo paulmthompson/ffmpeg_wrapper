@@ -14,6 +14,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
+#include <libavutil/opt.h>
 }
 
 #include <chrono>
@@ -358,32 +359,64 @@ int avcodec_send_packet(AVFormatContext& fmtCtx,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Modified from instructions at https://habr.com/en/company/intel/blog/575632/
-AVCodecContext make_encode_context(std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt)
+AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt)
 {
     const ::AVCodec* codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
+    if (! codec) {
+        std::cout << "Could not find codec by name";
+    }
     auto codecCtx = AVCodecContext(::avcodec_alloc_context3(codec),
         [](::AVCodecContext* c) {
             ::avcodec_free_context(&c);
         });
 
+    //https://stackoverflow.com/questions/46444474/c-ffmpeg-create-mp4-file
+    ::AVStream* videoStream = ::avformat_new_stream(media.get(),codec);
+
+    videoStream->codecpar->codec_id = ::AV_CODEC_ID_H264;
+    videoStream->codecpar->codec_type = ::AVMEDIA_TYPE_VIDEO;
+    videoStream->codecpar->width = width;
+    videoStream->codecpar->height = height;
+    videoStream->codecpar->format = pix_fmt;
+    videoStream->codecpar->bit_rate = 2000 * 1000;
+    
+    ::avcodec_parameters_to_context(codecCtx.get(),videoStream->codecpar);
+
+    codecCtx->time_base = ::AVRational({1,fps});
+    codecCtx->framerate = ::AVRational({fps,1});
+
+    ::av_opt_set(codecCtx.get(),"preset","ultrafast",0);
+
+    ::avcodec_parameters_from_context(videoStream->codecpar, codecCtx.get());
+
+    std::string test_file = "test2.mp4";
+    ::avio_open(&media->pb, test_file.c_str(), AVIO_FLAG_WRITE);
+
+    ::avformat_write_header(media.get(), NULL);
+    /*
     codecCtx->width = width;
     codecCtx->height = height;
     codecCtx->time_base = ::AVRational({1,fps});
     codecCtx->framerate = ::AVRational({fps,1});
     codecCtx->sample_aspect_ratio = ::AVRational({1,1});
     codecCtx->pix_fmt = pix_fmt;
+    */
 
     return codecCtx;
 }
 
-AVCodecContext make_encode_context_nvenc(int width, int height, int fps) {
-    return make_encode_context("h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
+AVCodecContext make_encode_context_nvenc(AVFormatContext& media,int width, int height, int fps) {
+    return make_encode_context(media,"h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
 }
 
 void bind_hardware_frames_context(AVCodecContext& ctx, int width, int height, ::AVPixelFormat hw_pix_fmt,::AVPixelFormat sw_pix_fmt)
 {
     ::AVBufferRef *hw_device_ctx = nullptr;
-    ::av_hwdevice_ctx_create(&hw_device_ctx,::AV_HWDEVICE_TYPE_CUDA,NULL,NULL,0); // Deallocator?
+    auto err = ::av_hwdevice_ctx_create(&hw_device_ctx,::AV_HWDEVICE_TYPE_CUDA,NULL,NULL,0); // Deallocator?
+
+    if (err < 0) {
+        std::cout << "Failed to create CUDA device with error code ";
+    }
 
     auto hw_frames_ref = ::av_hwframe_ctx_alloc(hw_device_ctx); // Deallocator?
 
@@ -398,31 +431,46 @@ void bind_hardware_frames_context(AVCodecContext& ctx, int width, int height, ::
 
     ctx->hw_frames_ctx = ::av_buffer_ref(hw_frames_ref);
 
+    ::av_buffer_unref(&hw_frames_ref);
+
 }
 
 void bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int height, ::AVPixelFormat sw_pix_fmt) {
      bind_hardware_frames_context(ctx, width, height, AV_PIX_FMT_CUDA,sw_pix_fmt);
 }
 
-void hardware_encode(FILE * pFile,AVCodecContext& ctx, AVFrame& sw_frame)
+void hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AVFrame& sw_frame, int frame_count)
 {
 
     auto hw_frame = libav::av_frame_alloc();
 
     const ::AVCodec* codec = ::avcodec_find_encoder_by_name("h264_nvenc");
-    ::av_hwframe_get_buffer(ctx->hw_frames_ctx,hw_frame.get(),0);
+    auto err = ::av_hwframe_get_buffer(ctx->hw_frames_ctx,hw_frame.get(),0);
+    if (err) {
+        std::cout << "Could not get hardware frame buffer";
+    }
 
     ::avcodec_open2(ctx.get(),codec,NULL);
 
-    ::av_hwframe_transfer_data(hw_frame.get(),sw_frame.get(),0);
+    err = ::av_hwframe_transfer_data(hw_frame.get(),sw_frame.get(),0);
+    if (err) {
+        std::cout << "Error transferring data frame to surface";
+    }
 
     auto pkt = av_packet_alloc();
+
+    
+    //hw_frame->pts = 2000 * frame_count;
 
     ::avcodec_send_frame(ctx.get(), hw_frame.get());
 
     ::avcodec_receive_packet(ctx.get(),pkt.get());
 
-    fwrite(pkt->data,pkt->size,1,pFile);
+    pkt->pts = 2000 * frame_count;
+    pkt->dts = pkt->pts;
+    pkt->duration = 2000;
+    //fwrite(pkt->data,pkt->size,1,pFile);
+    ::av_write_frame(media.get(), pkt.get());
 
     ::av_packet_unref(pkt.get());
 }

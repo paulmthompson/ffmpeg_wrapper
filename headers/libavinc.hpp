@@ -87,7 +87,7 @@ AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
     std::function<int64_t(int64_t, int)> seek, int buffer_size = 4096);
 
 ///////////////////////////////////////////////////////////////////////////////
-int av_read_frame(::AVFormatContext* ctx, ::AVPacket* pkt);
+int DLLOPT av_read_frame(::AVFormatContext* ctx, ::AVPacket* pkt);
 
 // AVPacket is extended to enable ranged for loop
 using AVPacketBase = std::unique_ptr<::AVPacket, void (*)(::AVPacket*)>;
@@ -321,15 +321,15 @@ inline int avfilter_graph_write_frame(AVFilterGraph& graph, AVFrame& frame, std:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AVCodecContext make_encode_context(std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt);
+AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt);
 
-AVCodecContext make_encode_context_nvenc(int width, int height, int fps);
+AVCodecContext DLLOPT make_encode_context_nvenc(AVFormatContext& media,int width, int height, int fps);
 
 void bind_hardware_frames_context(AVCodecContext& ctx, int width, int height, ::AVPixelFormat hw_pix_fmt,::AVPixelFormat sw_pix_fmt);
 
-void bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int height, ::AVPixelFormat sw_pix_fmt);
+void DLLOPT bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int height, ::AVPixelFormat sw_pix_fmt);
 
-void hardware_encode(FILE * pFile,AVCodecContext& ctx, AVFrame& sw_frame);
+void DLLOPT hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AVFrame& sw_frame,int frame_count);
 
 } // End namespace
 
