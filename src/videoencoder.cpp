@@ -6,6 +6,9 @@
 #include <string>
 #include <memory>
 
+#include <chrono>  // for high_resolution_clock
+#include <iostream>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -63,6 +66,12 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
             break;
     }
 
+    this->frame_nv12 = libav::av_frame_alloc();
+    this->frame_nv12->format = ::AV_PIX_FMT_NV12;
+    this->frame_nv12->width = this->width;
+    this->frame_nv12->height = this->height;
+    ::av_frame_get_buffer(this->frame_nv12.get(),32);
+
     ::av_frame_get_buffer(this->frame.get(),32);
 
 }
@@ -80,9 +89,23 @@ void VideoEncoder::closeFile() {
 }
 
 void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
+
     ::av_frame_make_writable(this->frame.get());
     memcpy(this->frame->data[0],input_data.data(),this->height*this->width);
-    libav::hardware_encode(this->media,this->codecCtx, libav::convert_frame(this->frame,this->width,this->height,::AV_PIX_FMT_NV12),this->frame_count);
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    //libav::AVFrame nvframe = libav::convert_frame(this->frame,this->width,this->height,::AV_PIX_FMT_NV12);
+    libav::convert_frame(this->frame,this->frame_nv12);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    libav::hardware_encode(this->media,this->codecCtx, std::move(this->frame_nv12),this->frame_count);
+
+    auto t3 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed1 = t2 - t1;
+    std::chrono::duration<double> elapsed2 = t3 - t2;
+    std::cout << "Elapsed time for scaling: " << elapsed1.count() << std::endl;
+    std::cout << "Elapsed time for encoding: " << elapsed2.count() << std::endl;
+
     this->frame_count++;
 }
 

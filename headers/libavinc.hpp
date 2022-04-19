@@ -230,6 +230,8 @@ AVFrame av_frame_clone(const AVFrame& frame);
 
 AVFrame convert_frame(AVFrame& frame, int width_out, int height_out, ::AVPixelFormat pix_out);
 
+void convert_frame(AVFrame& frame_in, AVFrame& frame_out);
+
 ///////////////////////////////////////////////////////////////////////////////
 int av_open_best_stream(AVFormatContext& fmtCtx, AVMediaType type, int related_stream = -1);
 

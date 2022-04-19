@@ -265,6 +265,16 @@ AVFrame convert_frame(AVFrame& frame, int width_out, int height_out, ::AVPixelFo
     return frame2;
 }
 
+void convert_frame(AVFrame& frame_in, AVFrame& frame_out) {
+
+    ::SwsContext * pContext = ::sws_getContext(frame_in->width, frame_in->height, (::AVPixelFormat)frame_in->format,
+                                          frame_out->width, frame_out->height, 
+                                          (::AVPixelFormat)frame_out->format, (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR), nullptr, nullptr, nullptr);
+    sws_scale(pContext, frame_in->data, frame_in->linesize, 0, frame_in->height, frame_out->data, frame_out->linesize);
+
+    sws_freeContext(pContext);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int av_open_best_stream(AVFormatContext& fmtCtx, AVMediaType type, int related_stream)
@@ -386,7 +396,7 @@ AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name
     codecCtx->time_base = ::AVRational({1,fps});
     codecCtx->framerate = ::AVRational({fps,1});
 
-    ::av_opt_set(codecCtx.get(),"preset","medium",0);
+    ::av_opt_set(codecCtx.get(),"preset","fast",0);
 
     ::avcodec_parameters_from_context(videoStream->codecpar, codecCtx.get());
 

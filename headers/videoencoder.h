@@ -33,13 +33,14 @@ private:
     libav::AVFormatContext media;
     libav::AVCodecContext codecCtx; 
     //libav::AVStream;
-    libav::AVFrame frame; 
+    libav::AVFrame frame; //This frame has the same format as the camera
+    libav::AVFrame frame_nv12; // This frame must be compatible with hardware encoding (nv12). frame will be scaled to frame_2.
 
     int frame_count;
     int width;
     int height;
     int fps;
-    
+
     std::string encoder_name;
     std::string file_path;
     std::string file_name;
