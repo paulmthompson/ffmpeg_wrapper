@@ -19,6 +19,7 @@ class DLLOPT VideoEncoder {
 public:
     VideoEncoder();
     VideoEncoder(int width, int height, int fps);
+
     void createContext(int width, int height, int fps);
     void set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt);
     void openFile(std::string filename);
@@ -38,7 +39,10 @@ private:
     int width;
     int height;
     int fps;
-    FILE* file_out;
+    std::string encoder_name;
+    std::string file_path;
+    std::string file_name;
+
 };
 
 

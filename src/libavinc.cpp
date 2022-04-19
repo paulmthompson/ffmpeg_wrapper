@@ -390,12 +390,14 @@ AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name
 
     ::avcodec_parameters_from_context(videoStream->codecpar, codecCtx.get());
 
-    std::string test_file = "test2.mp4";
-    ::avio_open(&media->pb, test_file.c_str(), AVIO_FLAG_WRITE);
+    return codecCtx;
+}
+
+void open_encode_stream_to_write(AVFormatContext& media,std::string file_name) {
+
+    ::avio_open(&media->pb, file_name.c_str(), AVIO_FLAG_WRITE);
 
     ::avformat_write_header(media.get(), NULL);
-
-    return codecCtx;
 }
 
 AVCodecContext make_encode_context_nvenc(AVFormatContext& media,int width, int height, int fps) {
@@ -451,9 +453,6 @@ void hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AVFrame& sw_fra
     }
 
     auto pkt = av_packet_alloc();
-
-    
-    //hw_frame->pts = 2000 * frame_count;
 
     ::avcodec_send_frame(ctx.get(), hw_frame.get());
 

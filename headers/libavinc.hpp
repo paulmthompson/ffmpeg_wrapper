@@ -348,6 +348,8 @@ void DLLOPT bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, i
 
 void DLLOPT hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AVFrame& sw_frame,int frame_count);
 
+void DLLOPT open_encode_stream_to_write(AVFormatContext& media,std::string file_name);
+
 } // End namespace
 
 #endif // LIBAVINC_HPP

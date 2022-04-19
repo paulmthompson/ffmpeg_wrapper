@@ -20,6 +20,8 @@ VideoEncoder::VideoEncoder() {
     width = 640;
     height = 480;
     frame_count = 0;
+    file_path = "./";
+    file_name = "test.mp4";
 }
 
 VideoEncoder::VideoEncoder(int width, int height, int fps) {
@@ -33,7 +35,8 @@ void VideoEncoder::createContext(int width, int height, int fps) {
     this->height = height;
     this->fps = fps;
 
-    auto mymedia = libav::avformat_open_output("test2.mp4","mp4");
+    std::string full_path = this->file_path + this->file_name;
+    auto mymedia = libav::avformat_open_output(full_path,"mp4");
     this->media = std::move(mymedia);
 
     auto mycodecCtx = libav::make_encode_context_nvenc(this->media,this->width, this->height, this->fps);
@@ -65,11 +68,13 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
 }
 
 void VideoEncoder::openFile(std::string filename) {
-    //this->file_out = ::fopen(filename.c_str(),"wb");
+
+    std::string full_path = this->file_path + this->file_name;
+    libav::open_encode_stream_to_write(this->media,full_path);
 }
 
 void VideoEncoder::closeFile() {
-    //::fclose(this->file_out);
+
     ::av_write_trailer(this->media.get());
     ::avio_closep(&media->pb);
 }
