@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include <filesystem>
 
 #include <chrono>  // for high_resolution_clock
 #include <iostream>
@@ -31,6 +32,13 @@ VideoEncoder::VideoEncoder(int width, int height, int fps) {
     this->width = width;
     this->height = height;
     this->fps = fps;
+}
+
+//https://stackoverflow.com/questions/35530092/c-splitting-an-absolute-file-path/69990972#69990972
+void VideoEncoder::setSavePath(std::string full_path) {
+    std::filesystem::path path(full_path);
+    this->file_path = path.parent_path().string() + "/"; 
+    this->file_name = path.filename().string(); 
 }
 
 void VideoEncoder::createContext(int width, int height, int fps) {
@@ -76,7 +84,7 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
 
 }
 
-void VideoEncoder::openFile(std::string filename) {
+void VideoEncoder::openFile() {
 
     std::string full_path = this->file_path + this->file_name;
     libav::open_encode_stream_to_write(this->media,full_path);
@@ -103,8 +111,8 @@ void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed1 = t2 - t1;
     std::chrono::duration<double> elapsed2 = t3 - t2;
-    std::cout << "Elapsed time for scaling: " << elapsed1.count() << std::endl;
-    std::cout << "Elapsed time for encoding: " << elapsed2.count() << std::endl;
+    //std::cout << "Elapsed time for scaling: " << elapsed1.count() << std::endl;
+    //std::cout << "Elapsed time for encoding: " << elapsed2.count() << std::endl;
 
     this->frame_count++;
 }

@@ -22,12 +22,14 @@ public:
 
     void createContext(int width, int height, int fps);
     void set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt);
-    void openFile(std::string filename);
+    void openFile();
     void closeFile();
     void writeFrameGray8(std::vector<uint8_t>& input_data);
 
     int getWidth() const;
     int getHeight() const;
+
+    void setSavePath(std::string full_path);
 
 private:
     libav::AVFormatContext media;
