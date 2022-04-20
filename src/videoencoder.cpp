@@ -117,14 +117,6 @@ void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
     this->frame_count++;
 }
 
-int VideoEncoder::getWidth() const {
-    return this->width;
-}
-
-int VideoEncoder::getHeight() const {
-    return this->height;
-}
-
 
 
 

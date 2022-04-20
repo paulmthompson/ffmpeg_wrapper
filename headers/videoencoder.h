@@ -26,8 +26,8 @@ public:
     void closeFile();
     void writeFrameGray8(std::vector<uint8_t>& input_data);
 
-    int getWidth() const;
-    int getHeight() const;
+    int getWidth() const {return width;}
+    int getHeight() const {return height;}
 
     void setSavePath(std::string full_path);
 
