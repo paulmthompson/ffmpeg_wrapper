@@ -56,7 +56,7 @@ add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 #        ${CMAKE_CURRENT_LIST_DIR}/ffmpeg_wrapper.cpp
 #)
 
-target_link_libraries(ffmpeg_wrapper PUBLIC
+target_link_libraries(ffmpeg_wrapper PRIVATE
     ${AVCODEC_LIBRARY}
     ${AVFORMAT_LIBRARY}
     ${AVUTIL_LIBRARY}
@@ -75,3 +75,10 @@ target_include_directories(ffmpeg_wrapper PRIVATE .)
 target_link_options(ffmpeg_wrapper PRIVATE "-Wl,--as-needed")
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/ffmpeg_wrapper.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ffmpeg_wrapper
+)
