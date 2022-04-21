@@ -18,7 +18,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 }
 
-
+namespace ffmpeg_wrapper {
 
 VideoEncoder::VideoEncoder() {
     width = 640;
@@ -118,6 +118,6 @@ void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
 }
 
 
-
+}
 
 

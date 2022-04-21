@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.4)
 project(ffmpeg_wrapper VERSION 0.1.0)
+
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -13,24 +15,7 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
-
-set(FFMPEG_PATH "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\lib")
-set(FFMPEG_INCLUDE "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\include")
-
-#set(ENV{CMAKE_PREFIX_PATH},"$ENV{CMAKE_PREFIX_PATH};${FFMPEG_PATH}")
-#find_package(PkgConfig REQUIRED)
-#pkg_check_modules(ffmpeg REQUIRED avutil)
-
-find_library(AVCODEC_LIBRARY avcodec HINTS ${FFMPEG_PATH})
-find_library(AVFORMAT_LIBRARY avformat HINTS ${FFMPEG_PATH})
-find_library(AVUTIL_LIBRARY avutil HINTS ${FFMPEG_PATH})
-find_library(AVFILTER_LIBRARY avfilter HINTS ${FFMPEG_PATH})
-find_library(SWSCALE_LIBRARY swscale HINTS ${FFMPEG_PATH})
-find_library(SWRESAMPLE_LIBRARY swresample HINTS ${FFMPEG_PATH})
-
-include_directories(${FFMPEG_INCLUDE})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/headers)
-
+#Create Library
 set(Sources
         src/videodecoder.cpp
         src/libavinc.cpp
@@ -44,17 +29,39 @@ set(Headers
     headers/videoencoder.h
 )
 
+set(Public_Headers
+    headers/videodecoder.h
+    headers/videoencoder.h
+)
+
+set(FFMPEG_PATH "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\lib")
+set(FFMPEG_INCLUDE "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\include")
+
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 
-#target_sources(ffmpeg_wrapper
-#    PRIVATE 
-#        ${CMAKE_CURRENT_LIST_DIR}/src/videodecoder.cpp 
-#        ${CMAKE_CURRENT_LIST_DIR}/src/libavinc.cpp 
-#    PUBLIC
-#        ${CMAKE_CURRENT_LIST_DIR}/headers/videodecoder.h 
-#        ${CMAKE_CURRENT_LIST_DIR}/headers/libavinc.hpp 
-#        ${CMAKE_CURRENT_LIST_DIR}/ffmpeg_wrapper.cpp
-#)
+#add the include directories
+target_include_directories(ffmpeg_wrapper
+                           PRIVATE
+                           #These are my directories
+                           ${CMAKE_CURRENT_SOURCE_DIR}/headers
+                           ${FFMPEG_INCLUDE}
+                           PUBLIC
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                           "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+
+#target_include_directories(ffmpeg_wrapper PRIVATE ${FFMPEG_INCLUDE})
+#include_directories((${FFMPEG_INCLUDE}))
+
+find_package(ffmpeg MODULE)
+
+find_library(AVCODEC_LIBRARY avcodec HINTS ${FFMPEG_PATH})
+find_library(AVFORMAT_LIBRARY avformat HINTS ${FFMPEG_PATH})
+find_library(AVUTIL_LIBRARY avutil HINTS ${FFMPEG_PATH})
+find_library(AVFILTER_LIBRARY avfilter HINTS ${FFMPEG_PATH})
+find_library(SWSCALE_LIBRARY swscale HINTS ${FFMPEG_PATH})
+find_library(SWRESAMPLE_LIBRARY swresample HINTS ${FFMPEG_PATH})
 
 target_link_libraries(ffmpeg_wrapper PRIVATE
     ${AVCODEC_LIBRARY}
@@ -65,12 +72,21 @@ target_link_libraries(ffmpeg_wrapper PRIVATE
     ${SWRESAMPLE_LIBRARY}
 )
 
-#Does this 
-target_include_directories(ffmpeg_wrapper PRIVATE .)
+# note that ${public_headers} has to be in quotes
+set_target_properties(ffmpeg_wrapper PROPERTIES PUBLIC_HEADER "${Public_Headers}")
 
-#install(TARGETS ffmpeg_wrapper
-#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#install and create export set
+# install the target and create export-set
+install(TARGETS ffmpeg_wrapper EXPORT ffmpeg_wrapperTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+        PUBLIC_HEADER DESTINATION include/ffmpeg_wrapper # include/SomeLibrary
+)
+
+#Install the header files
+install(FILES ${Headers} DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR})
 
 target_link_options(ffmpeg_wrapper PRIVATE "-Wl,--as-needed")
 
@@ -78,7 +94,27 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 include(CMakePackageConfigHelpers)
 
+#Create config File
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/ffmpeg_wrapper.cmake"
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ffmpeg_wrapper
+  "${CMAKE_CURRENT_BINARY_DIR}/ffmpeg_wrapperConfig.cmake"
+  INSTALL_DESTINATION cmake
+)
+
+#install config file
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/ffmpeg_wrapperConfig.cmake"
+        DESTINATION cmake
+)
+
+# generate and install export file
+install(EXPORT ffmpeg_wrapperTargets
+        FILE ffmpeg_wrapperTargets.cmake
+        NAMESPACE ffmpeg_wrapper::
+        DESTINATION cmake
+)
+
+#Generate the export targets for the build tree
+export(EXPORT "ffmpeg_wrapperTargets"
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/ffmpeg_wrapperTargets.cmake"
+    NAMESPACE ffmpeg_wrapper::
 )

@@ -11,6 +11,8 @@
 	#define DLLOPT __attribute__((visibility("default")))
 #endif
 
+namespace ffmpeg_wrapper {
+
 class DLLOPT VideoDecoder {
 
 public:
@@ -34,6 +36,6 @@ private:
     void yuv420togray8(std::shared_ptr<::AVFrame>& frame,std::vector<uint8_t>&);
 };
 
-
+}
 
 #endif // VIDEODECODER_H

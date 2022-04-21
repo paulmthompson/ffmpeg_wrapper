@@ -14,6 +14,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 }
 
+namespace ffmpeg_wrapper {
 
 VideoDecoder::VideoDecoder()
 {
@@ -96,3 +97,4 @@ void VideoDecoder::yuv420togray8(libav::AVFrame& frame,std::vector<uint8_t>& out
     memcpy(output.data(),frame2->data[0],this->height*this->width);
 }
 
+}

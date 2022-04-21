@@ -12,6 +12,8 @@
 	#define DLLOPT __attribute__((visibility("default")))
 #endif
 
+namespace ffmpeg_wrapper {
+
 enum INPUT_PIXEL_FORMAT {NV12, GRAY8};
 
 class DLLOPT VideoEncoder {
@@ -49,6 +51,7 @@ private:
 
 };
 
+}
 
 
 #endif // VIDEODECODER_H
