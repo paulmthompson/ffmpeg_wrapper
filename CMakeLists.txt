@@ -34,8 +34,8 @@ set(Public_Headers
     headers/videoencoder.h
 )
 
-set(FFMPEG_PATH "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\lib")
-set(FFMPEG_INCLUDE "C:\\Users\\wanglab\\Downloads\\ffmpeg-5.0-full_build-shared\\include")
+set(FFMPEG_PATH "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/lib>")
+set(FFMPEG_INCLUDE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/include>")
 
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 
@@ -54,7 +54,7 @@ target_include_directories(ffmpeg_wrapper
 #target_include_directories(ffmpeg_wrapper PRIVATE ${FFMPEG_INCLUDE})
 #include_directories((${FFMPEG_INCLUDE}))
 
-find_package(ffmpeg MODULE)
+#add_subdirectory(FFmpeg)
 
 find_library(AVCODEC_LIBRARY avcodec HINTS ${FFMPEG_PATH})
 find_library(AVFORMAT_LIBRARY avformat HINTS ${FFMPEG_PATH})
@@ -63,7 +63,7 @@ find_library(AVFILTER_LIBRARY avfilter HINTS ${FFMPEG_PATH})
 find_library(SWSCALE_LIBRARY swscale HINTS ${FFMPEG_PATH})
 find_library(SWRESAMPLE_LIBRARY swresample HINTS ${FFMPEG_PATH})
 
-target_link_libraries(ffmpeg_wrapper PRIVATE
+target_link_libraries(ffmpeg_wrapper PUBLIC #How do we decide public vs private?
     ${AVCODEC_LIBRARY}
     ${AVFORMAT_LIBRARY}
     ${AVUTIL_LIBRARY}
