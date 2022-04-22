@@ -106,7 +106,7 @@ void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
     libav::convert_frame(this->frame,this->frame_nv12);
     auto t2 = std::chrono::high_resolution_clock::now();
 
-    libav::hardware_encode(this->media,this->codecCtx, std::move(this->frame_nv12),this->frame_count);
+    libav::hardware_encode(this->media,this->codecCtx, this->frame_nv12,this->frame_count);
 
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed1 = t2 - t1;

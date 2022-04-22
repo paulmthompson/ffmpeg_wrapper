@@ -21,9 +21,9 @@ public:
     void createMedia(std::string filename);
     std::vector<uint8_t> getFrame(int frame_id, bool frame_by_frame = false);
 
-    int getFrameCount() const;
-    int getWidth() const;
-    int getHeight() const;
+    int getFrameCount() const {return frame_count;}
+    int getWidth() const {return width;}
+    int getHeight() const {return height;}
 
 private:
     libav::AVFormatContext media; //This is a unique_ptr

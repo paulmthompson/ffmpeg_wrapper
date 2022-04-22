@@ -44,19 +44,6 @@ void VideoDecoder::createMedia(std::string filename) {
     
 }
 
-int VideoDecoder::getFrameCount() const
-{
-    return this->frame_count;
-}
-int VideoDecoder::getWidth() const
-{
-    return this->width;
-}
-int VideoDecoder::getHeight() const
-{
-    return this->height;
-}
-
 std::vector<uint8_t> VideoDecoder::getFrame(int frame_id,bool frame_by_frame)
 {
     std::vector<uint8_t> output(this->height * this->width); // How should this be passed?

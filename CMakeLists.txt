@@ -34,8 +34,10 @@ set(Public_Headers
     headers/videoencoder.h
 )
 
-set(FFMPEG_PATH "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/lib>")
-set(FFMPEG_INCLUDE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/include>")
+#With gcc, the build interface doesnt' seem to work so well?
+#I'm not sure why
+set(FFMPEG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/lib")
+set(FFMPEG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/include")
 
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 
@@ -53,8 +55,6 @@ target_include_directories(ffmpeg_wrapper
 
 #target_include_directories(ffmpeg_wrapper PRIVATE ${FFMPEG_INCLUDE})
 #include_directories((${FFMPEG_INCLUDE}))
-
-#add_subdirectory(FFmpeg)
 
 find_library(AVCODEC_LIBRARY avcodec HINTS ${FFMPEG_PATH})
 find_library(AVFORMAT_LIBRARY avformat HINTS ${FFMPEG_PATH})
