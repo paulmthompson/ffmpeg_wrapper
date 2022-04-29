@@ -53,6 +53,7 @@ void VideoEncoder::createContext(int width, int height, int fps) {
     auto mycodecCtx = libav::make_encode_context_nvenc(this->media,this->width, this->height, this->fps);
     this->codecCtx = std::move(mycodecCtx);
 
+    this->frame_count = 0; //Reset frame count to zero
 }
 
 void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
