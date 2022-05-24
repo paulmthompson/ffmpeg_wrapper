@@ -34,43 +34,31 @@ set(Public_Headers
     headers/videoencoder.h
 )
 
-#With gcc, the build interface doesnt' seem to work so well?
-#I'm not sure why
-set(FFMPEG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/lib")
-set(FFMPEG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/Ffmpeg/include")
-
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
+
+#https://github.com/microsoft/vcpkg/pull/19308
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+                libavcodec
+                libavformat
+                libavutil
+                libswscale
+                libswresample
+                )
 
 #add the include directories
 target_include_directories(ffmpeg_wrapper
                            PRIVATE
                            #These are my directories
                            ${CMAKE_CURRENT_SOURCE_DIR}/headers
-                           ${FFMPEG_INCLUDE}
+                           
                            PUBLIC
+                           ${FFMPEG_INCLUDE_DIRS}
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-
-#target_include_directories(ffmpeg_wrapper PRIVATE ${FFMPEG_INCLUDE})
-#include_directories((${FFMPEG_INCLUDE}))
-
-find_library(AVCODEC_LIBRARY avcodec HINTS ${FFMPEG_PATH})
-find_library(AVFORMAT_LIBRARY avformat HINTS ${FFMPEG_PATH})
-find_library(AVUTIL_LIBRARY avutil HINTS ${FFMPEG_PATH})
-find_library(AVFILTER_LIBRARY avfilter HINTS ${FFMPEG_PATH})
-find_library(SWSCALE_LIBRARY swscale HINTS ${FFMPEG_PATH})
-find_library(SWRESAMPLE_LIBRARY swresample HINTS ${FFMPEG_PATH})
-
-target_link_libraries(ffmpeg_wrapper PUBLIC #How do we decide public vs private?
-    ${AVCODEC_LIBRARY}
-    ${AVFORMAT_LIBRARY}
-    ${AVUTIL_LIBRARY}
-    ${AVFILTER_LIBRARY}
-    ${SWSCALE_LIBRARY}
-    ${SWRESAMPLE_LIBRARY}
-)
+target_link_libraries(ffmpeg_wrapper PRIVATE PkgConfig::FFMPEG)
 
 # note that ${public_headers} has to be in quotes
 set_target_properties(ffmpeg_wrapper PROPERTIES PUBLIC_HEADER "${Public_Headers}")
@@ -84,6 +72,30 @@ install(TARGETS ffmpeg_wrapper EXPORT ffmpeg_wrapperTargets
         INCLUDES DESTINATION include
         PUBLIC_HEADER DESTINATION include/ffmpeg_wrapper # include/SomeLibrary
 )
+
+install(TARGETS ffmpeg_wrapper RUNTIME_DEPENDENCY_SET appDeps)
+
+IF (WIN32)
+
+install(RUNTIME_DEPENDENCY_SET appDeps
+        PRE_EXCLUDE_REGEXES
+                [[api-ms-win-.*]] [[ext-ms-.*]] [[kernel32\.dll]] 
+                [[bcrypt.dll]] [[mfplat.dll]] [[msvcrt.dll]] [[ole32.dll]] [[secur32.dll]] [[user32.dll]] [[vcruntime140.dll]]
+                [[ws2_32.dll]]
+                [[libgcc_s_seh-1\.dll]] [[libstdc\+\+\-6.dll]] 
+        POST_EXCLUDE_REGEXES
+                [[.*/system32/.*\.dll]]
+)
+
+ELSE()
+
+install(RUNTIME_DEPENDENCY_SET appDeps
+        PRE_EXCLUDE_REGEXES
+                [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
+)
+ENDIF()
+
+
 
 #Install the header files
 install(FILES ${Headers} DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR})

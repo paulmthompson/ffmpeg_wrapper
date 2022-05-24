@@ -280,7 +280,7 @@ void convert_frame(AVFrame& frame_in, AVFrame& frame_out) {
 int av_open_best_stream(AVFormatContext& fmtCtx, AVMediaType type, int related_stream)
 {
     int idx = -1;
-    const ::AVCodec* codec = nullptr;
+    ::AVCodec* codec = nullptr;
     if ((idx = ::av_find_best_stream(fmtCtx.get(), type, -1, related_stream, &codec, 0)) < 0) {
         return -1;
     }
