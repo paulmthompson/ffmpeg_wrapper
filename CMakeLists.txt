@@ -34,7 +34,7 @@ set(Public_Headers
     headers/videoencoder.h
 )
 
-add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
+add_library(ffmpeg_wrapper STATIC ${Sources} ${Headers})
 
 #https://github.com/microsoft/vcpkg/pull/19308
 find_package(PkgConfig REQUIRED)
@@ -93,6 +93,7 @@ install(RUNTIME_DEPENDENCY_SET appDeps
         PRE_EXCLUDE_REGEXES
                 [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
 )
+
 ENDIF()
 
 
