@@ -19,10 +19,12 @@ enum INPUT_PIXEL_FORMAT {NV12, GRAY8};
 class DLLOPT VideoEncoder {
 
 public:
+
     VideoEncoder();
     VideoEncoder(int width, int height, int fps);
 
     void createContext(int width, int height, int fps);
+
     void set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt);
     void openFile();
     void closeFile();

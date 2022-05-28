@@ -10,14 +10,6 @@
 #include <chrono>  // for high_resolution_clock
 #include <iostream>
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-#include <libswscale/swscale.h>
-#include <libavutil/imgutils.h>
-}
-
 namespace ffmpeg_wrapper {
 
 VideoEncoder::VideoEncoder() {

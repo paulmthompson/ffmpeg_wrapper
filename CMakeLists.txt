@@ -8,24 +8,22 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(CTest)
-enable_testing()
+#include(CTest)
+#enable_testing()
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
+#set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+#set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+#include(CPack)
 
 #Create Library
 set(Sources
         src/videodecoder.cpp
-        src/libavinc.cpp
-        ffmpeg_wrapper.cpp
         src/videoencoder.cpp
 )
 
 set(Headers
-    headers/videodecoder.h
     headers/libavinc.hpp
+    headers/videodecoder.h
     headers/videoencoder.h
 )
 
@@ -52,7 +50,7 @@ target_include_directories(ffmpeg_wrapper
                            #These are my directories
                            ${CMAKE_CURRENT_SOURCE_DIR}/headers
                            
-                           PUBLIC
+                           PRIVATE
                            ${FFMPEG_INCLUDE_DIRS}
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
@@ -89,13 +87,21 @@ install(RUNTIME_DEPENDENCY_SET appDeps
 
 ELSE()
 
-install(RUNTIME_DEPENDENCY_SET appDeps
-        PRE_EXCLUDE_REGEXES
-                [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
-                [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
-                [[libpthread.*]] [[librt.*]] [[libz.*]]
-        POST_EXCLUDE_REGEXES
-)
+#set(MY_STRING "/home/vcpkg/test")
+#message(STATUS "MY_STRING = ${MY_STRING}")
+#string(REGEX MATCH ".+\\v\\c\\p\\k\\g.*" FIRST_LINE "${MY_STRING}")
+#string(REGEX MATCH ".*vcpkg.*" FIRST_LINE "${MY_STRING}")
+#message(STATUS "FIRST_LINE = ${FIRST_LINE}")
+
+
+#install(RUNTIME_DEPENDENCY_SET appDeps
+#        PRE_EXCLUDE_REGEXES
+#                [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
+#                [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
+#                [[libpthread.*]] [[librt.*]] [[libz.*]]
+#        PRE_INCLUDE_REGEXES
+#                ".*vcpkg.*"
+#)
 
 ENDIF()
 
@@ -104,7 +110,7 @@ ENDIF()
 #Install the header files
 install(FILES ${Headers} DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR})
 
-target_link_options(ffmpeg_wrapper PRIVATE "-Wl,--as-needed")
+#target_link_options(ffmpeg_wrapper PRIVATE "-Wl,--as-needed")
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
