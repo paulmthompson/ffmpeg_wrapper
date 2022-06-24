@@ -1,6 +1,6 @@
 #include "videodecoder.h"
 
-#include "libavinc.hpp"
+#include "libavinc/libavinc.hpp"
 
 #include <functional>
 #include <string>

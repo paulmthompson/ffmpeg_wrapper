@@ -1,7 +1,7 @@
 #ifndef VIDEODECODER_H
 #define VIDEODECODER_H
 
-#include "libavinc.hpp"
+#include "libavinc/libavinc.hpp"
 #include <string>
 #include <vector>
 

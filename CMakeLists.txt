@@ -22,7 +22,6 @@ set(Sources
 )
 
 set(Headers
-    headers/libavinc.hpp
     headers/videodecoder.h
     headers/videoencoder.h
 )
@@ -44,26 +43,29 @@ pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
                 libswresample
                 )
 
+add_subdirectory(libavinc)
+
 #add the include directories
 target_include_directories(ffmpeg_wrapper
-                           PRIVATE
+                           PUBLIC
                            #These are my directories
-                           ${CMAKE_CURRENT_SOURCE_DIR}/headers
+#                           ${CMAKE_CURRENT_SOURCE_DIR}/headers
+                        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
                            
-                           PRIVATE
-                           ${FFMPEG_INCLUDE_DIRS}
-                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                           PUBLIC
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers>"
                            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(ffmpeg_wrapper PRIVATE PkgConfig::FFMPEG)
+target_link_libraries(ffmpeg_wrapper PRIVATE libavinc)
 
 # note that ${public_headers} has to be in quotes
 set_target_properties(ffmpeg_wrapper PROPERTIES PUBLIC_HEADER "${Public_Headers}")
 
 #install and create export set
 # install the target and create export-set
-install(TARGETS ffmpeg_wrapper EXPORT ffmpeg_wrapperTargets
+install(TARGETS ffmpeg_wrapper
+        EXPORT ffmpeg_wrapperTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
@@ -108,9 +110,6 @@ ENDIF()
 
 
 #Install the header files
-install(FILES ${Headers} DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR})
-
-#target_link_options(ffmpeg_wrapper PRIVATE "-Wl,--as-needed")
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
