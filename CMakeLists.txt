@@ -95,6 +95,20 @@ ELSE()
 #string(REGEX MATCH ".*vcpkg.*" FIRST_LINE "${MY_STRING}")
 #message(STATUS "FIRST_LINE = ${FIRST_LINE}")
 
+set(FFMPEG_LIB_DIR "${FFMPEG_INCLUDE_DIRS}/../lib/")
+message(STATUS ${FFMPEG_LIB_DIR})
+
+set(FFMPEG_LIBS "libavcodec.so"
+                "libavformat.so"
+                "libavutil.so"
+                "libswscale.so"
+                "libswresample.so")
+
+list(TRANSFORM FFMPEG_LIBS PREPEND ${FFMPEG_LIB_DIR})
+
+message(STATUS ${FFMPEG_LIBS})
+
+INSTALL(FILES ${FFMPEG_LIBS} TYPE LIB)
 
 #install(RUNTIME_DEPENDENCY_SET appDeps
 #        PRE_EXCLUDE_REGEXES
