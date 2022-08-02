@@ -14,8 +14,6 @@
 
 namespace ffmpeg_wrapper {
 
-enum INPUT_PIXEL_FORMAT {NV12, GRAY8};
-
 class DLLOPT VideoEncoder {
 
 public:
@@ -25,6 +23,7 @@ public:
 
     void createContext(int width, int height, int fps);
 
+    enum INPUT_PIXEL_FORMAT {NV12, GRAY8};
     void set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt);
     void openFile();
     void closeFile();
@@ -34,6 +33,8 @@ public:
     int getHeight() const {return height;}
 
     void setSavePath(std::string full_path);
+
+    
 
 private:
     libav::AVFormatContext media;

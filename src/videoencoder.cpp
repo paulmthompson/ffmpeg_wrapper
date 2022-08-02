@@ -56,19 +56,19 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
 
     switch (pixel_fmt) {
         case (NV12):
-            libav::bind_hardware_frames_context_nvenc(this->codecCtx, this->width, this->height, ::AV_PIX_FMT_NV12);
-            this->frame->format = ::AV_PIX_FMT_NV12;
+            libav::bind_hardware_frames_context_nvenc(this->codecCtx, this->width, this->height, libav::AV_PIX_FMT_NV12);
+            this->frame->format = libav::AV_PIX_FMT_NV12;
             break;
         case (GRAY8):
-            libav::bind_hardware_frames_context_nvenc(this->codecCtx, this->width, this->height, ::AV_PIX_FMT_NV12);
-            this->frame->format = ::AV_PIX_FMT_GRAY8;
+            libav::bind_hardware_frames_context_nvenc(this->codecCtx, this->width, this->height, libav::AV_PIX_FMT_NV12);
+            this->frame->format = libav::AV_PIX_FMT_GRAY8;
             break;
         default:
             break;
     }
 
     this->frame_nv12 = libav::av_frame_alloc();
-    this->frame_nv12->format = ::AV_PIX_FMT_NV12;
+    this->frame_nv12->format = libav::AV_PIX_FMT_NV12;
     this->frame_nv12->width = this->width;
     this->frame_nv12->height = this->height;
     ::av_frame_get_buffer(this->frame_nv12.get(),32);
