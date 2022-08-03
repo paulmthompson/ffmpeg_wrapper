@@ -616,11 +616,11 @@ inline int avfilter_graph_write_frame(AVFilterGraph& graph, AVFrame& frame, std:
 // Modified from instructions at https://habr.com/en/company/intel/blog/575632/
 // See also https://github.com/kmsquire/split_video/blob/master/split_video.c
 
-inline AVCodecContext make_encode_context(AVFormatContext& media,std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt)
+inline AVCodecContext make_encode_context(AVFormatContext& media,const std::string codec_name,int width, int height, int fps, ::AVPixelFormat pix_fmt)
 {
     const ::AVCodec* codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
     if (! codec) {
-        std::cout << "Could not find codec by name";
+        std::cout << "Could not find codec by name" << std::endl;
     }
     auto codecCtx = AVCodecContext(::avcodec_alloc_context3(codec),
         [](::AVCodecContext* c) {
@@ -660,7 +660,7 @@ inline void bind_hardware_frames_context(AVCodecContext& ctx, int width, int hei
     auto err = ::av_hwdevice_ctx_create(&hw_device_ctx,::AV_HWDEVICE_TYPE_CUDA,NULL,NULL,0); // Deallocator?
 
     if (err < 0) {
-        std::cout << "Failed to create CUDA device with error code ";
+        std::cout << "Failed to create CUDA device with error code " << std::endl;
     }
 
     auto hw_frames_ref = ::av_hwframe_ctx_alloc(hw_device_ctx); // Deallocator?
@@ -700,7 +700,8 @@ inline void DLLOPT hardware_encode(AVFormatContext& media,AVCodecContext& ctx, A
         std::cout << "Could not get hardware frame buffer";
     }
 
-    const ::AVCodec* codec = ::avcodec_find_encoder_by_name("h264_nvenc");
+    const std::string codec_name = "h264_nvenc";
+    const ::AVCodec* codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
     ::avcodec_open2(ctx.get(),codec,NULL); // Why does this have to happen with every write?
 
     err = ::av_hwframe_transfer_data(hw_frame.get(),sw_frame.get(),0);
