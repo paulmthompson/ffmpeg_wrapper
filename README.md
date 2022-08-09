@@ -14,6 +14,15 @@ I have compiled on both Linux and Windows. The only dependancy is a version of f
 On linux, you must use a version of ffmpeg that is a dynamic library. Follow this guide here to compile a custom triplet:  
 https://vcpkg.readthedocs.io/en/latest/examples/overlay-triplets-linux-dynamic/
 
+## How to use in a project
+
+You will need to make sure that the dependacy for ffmpeg is met as above. Set the cmake variable ffmpeg_wrapper_DIR to the install path. Then import and link the target with
+```cmake
+find_package(ffmpeg_wrapper CONFIG)
+
+target_link_libraries(myproject PRIVATE ffmpeg_wrapper::ffmpeg_wrapper)
+```
+
 ## Video Decoder
 
 The VideoDecoder class is expected to be used as part of a larger project to quickly grab frames from compressed videos. I have used this as an interface to load and display frames from mp4 videos in a GUI. 
