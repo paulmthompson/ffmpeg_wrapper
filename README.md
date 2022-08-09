@@ -7,7 +7,16 @@ I routinely use FFMPEG to decode video files and visualize the frames as part of
 
 The methods included in this package are my attempt to make relatively simple encoding and decoding objects that an be incorporated into other frameworks.
 
+## Installation
+
+I have compiled on both Linux and Windows. The only dependancy is a version of ffmpeg with nvidia CUDA support. I use vcpkg (https://vcpkg.io/en/index.html) to install the package **ffmpeg[nvcodec]**. 
+  
+On linux, you must use a version of ffmpeg that is a dynamic library. Follow this guide here to compile a custom triplet:  
+https://vcpkg.readthedocs.io/en/latest/examples/overlay-triplets-linux-dynamic/
+
 ## Video Decoder
+
+The VideoDecoder class is expected to be used as part of a larger project to quickly grab frames from compressed videos. I have used this as an interface to load and display frames from mp4 videos in a GUI. 
 
 ## Video Encoder
 
