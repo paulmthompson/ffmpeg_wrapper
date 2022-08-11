@@ -17,8 +17,8 @@ class DLLOPT VideoDecoder {
 
 public:
     VideoDecoder();
-    VideoDecoder(std::string filename);
-    void createMedia(std::string filename);
+    VideoDecoder(const std::string& filename);
+    void createMedia(const std::string& filename);
     std::vector<uint8_t> getFrame(int frame_id, bool frame_by_frame = false);
 
     int getFrameCount() const {return frame_count;}

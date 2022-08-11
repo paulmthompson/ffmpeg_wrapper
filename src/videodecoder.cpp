@@ -15,7 +15,11 @@ VideoDecoder::VideoDecoder()
     last_decoded_frame = 0;
 }
 
-void VideoDecoder::createMedia(std::string filename) {
+VideoDecoder::VideoDecoder(const std::string& filename) {
+    createMedia(filename);
+}
+
+void VideoDecoder::createMedia(const std::string& filename) {
 
     auto mymedia = libav::avformat_open_input(filename);
     this->media = std::move(mymedia);
