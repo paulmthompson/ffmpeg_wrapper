@@ -96,6 +96,7 @@ ELSE()
 #message(STATUS "FIRST_LINE = ${FIRST_LINE}")
 
 set(FFMPEG_LIB_DIR "${FFMPEG_INCLUDE_DIRS}/../lib/")
+message(STATUS "Looking for ffmpeg libraries on linux: ")
 message(STATUS ${FFMPEG_LIB_DIR})
 
 set(FFMPEG_LIBS "libavcodec.so"
@@ -107,6 +108,15 @@ set(FFMPEG_LIBS "libavcodec.so"
 list(TRANSFORM FFMPEG_LIBS PREPEND ${FFMPEG_LIB_DIR})
 
 message(STATUS ${FFMPEG_LIBS})
+
+foreach(X ${FFMPEG_LIBS})
+        if(EXISTS ${X})
+                message(STATUS "Found ffmpeg libs")
+        else()
+                message(STATUS "Could not find ffmpeg lib: ")
+                message(STATUS ${X})
+        endif()
+endforeach()
 
 INSTALL(FILES ${FFMPEG_LIBS} TYPE LIB)
 

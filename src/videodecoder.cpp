@@ -44,7 +44,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(int frame_id,bool frame_by_frame)
 {
     std::vector<uint8_t> output(this->height * this->width); // How should this be passed?
 
-    if ((frame_id == (last_decoded_frame + 1)) | (frame_by_frame)) {
+    if ((frame_id == (this->last_decoded_frame + 1)) & (frame_by_frame)) {
         ++(this->pkt);
     } else {
         libav::flicks time = libav::av_rescale(frame_id,{1,25});
@@ -67,7 +67,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(int frame_id,bool frame_by_frame)
                     ++(this->pkt);
                }
 
-              last_decoded_frame = frame->best_effort_timestamp / this->pkt.get()->duration;
+              this->last_decoded_frame = frame->best_effort_timestamp / this->pkt.get()->duration;
         });
     }
 
