@@ -321,6 +321,11 @@ inline int av_seek_frame(AVFormatContext& ctx, flicks time, int idx = -1, int fl
     return ::av_seek_frame(ctx.get(), idx, av_rescale(time, time_base), flags);
 }
 
+inline int av_seek_frame(AVFormatContext& ctx, int64_t time, int idx = -1, int flags = 0)
+{
+    return ::av_seek_frame(ctx.get(), idx, time, flags);
+}
+
 inline AVFormatContext avformat_open_output(const std::string& url, std::string format_name = std::string())
 {
     ::AVFormatContext* fmtCtx = nullptr;

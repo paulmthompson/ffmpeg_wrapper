@@ -34,6 +34,10 @@ private:
     int width;
     int height;
     void yuv420togray8(std::shared_ptr<::AVFrame>& frame,std::vector<uint8_t>&);
+
+    int64_t getDuration() const {return media->duration;}
+    int64_t getStartTime() const {return media->start_time;}
+    std::vector<int64_t> pts;
 };
 
 }
