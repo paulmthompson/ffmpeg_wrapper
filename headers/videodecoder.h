@@ -33,11 +33,18 @@ private:
     long long last_decoded_frame;
     int width;
     int height;
+    int fps_num;
+    int fps_denom;
     void yuv420togray8(std::shared_ptr<::AVFrame>& frame,std::vector<uint8_t>&);
+
+    int64_t nearest_iframe(int64_t frame_id);
+    int64_t find_frame_by_pts(int64_t pts);
 
     int64_t getDuration() const {return media->duration;}
     int64_t getStartTime() const {return media->start_time;}
     std::vector<int64_t> pts;
+    std::vector<int64_t> i_frames;
+    std::vector<int64_t> pkt_durations;
 };
 
 }
