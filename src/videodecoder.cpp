@@ -95,7 +95,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(int frame_id,bool frame_by_frame)
         
     }
     this->last_decoded_frame = frame_id; // This isn't great. Assumes everything worked
-    std::cout << "Decoded " << decoded_frames << std::endl;
+    //std::cout << "Decoded " << decoded_frames << std::endl;
     return output;
 }
 
