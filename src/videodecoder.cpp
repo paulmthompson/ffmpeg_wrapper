@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <algorithm>
+#include <numeric>
 
 namespace ffmpeg_wrapper {
 
@@ -45,7 +46,7 @@ void VideoDecoder::createMedia(const std::string& filename) {
 
     this->last_decoded_frame = frame_count;
 
-    int64_t divisor =  std::__gcd(this->getDuration() , (int64_t) this->getFrameCount() * 1000000);
+    int64_t divisor =  std::gcd(this->getDuration() , (int64_t) this->getFrameCount() * 1000000);
 
     this->fps_num = this->getDuration() / divisor;
     this->fps_denom = (int64_t) this->getFrameCount() * 1000000 / divisor;
