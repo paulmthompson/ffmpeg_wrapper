@@ -23,11 +23,12 @@ public:
 
     void createContext(int width, int height, int fps);
 
-    enum INPUT_PIXEL_FORMAT {NV12, GRAY8};
+    enum INPUT_PIXEL_FORMAT {NV12, GRAY8, RGB0};
     void set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt);
     void openFile();
     void closeFile();
     void writeFrameGray8(std::vector<uint8_t>& input_data);
+    void writeFrameRGB0(std::vector<uint32_t>& input_data);
 
     int getWidth() const {return width;}
     int getHeight() const {return height;}
@@ -47,6 +48,7 @@ private:
     int width;
     int height;
     int fps;
+    bool hardware_encode;
 
     std::string encoder_name;
     std::string file_path;

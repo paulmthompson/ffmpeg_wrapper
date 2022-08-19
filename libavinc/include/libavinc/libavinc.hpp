@@ -72,6 +72,7 @@ inline int64_t av_rescale(flicks time, ::AVRational scale)
 ///////////////////////////////////////////////////////////////////////////////
 using ::AV_PIX_FMT_GRAY8;
 using ::AV_PIX_FMT_NV12;
+using ::AV_PIX_FMT_RGB0;
 
 ///////////////////////////////////////////////////////////////////////////////
 using AVDictionary = std::multimap<std::string, std::string>;
@@ -653,7 +654,13 @@ inline AVCodecContext DLLOPT make_encode_context_nvenc(AVFormatContext& media,in
 {
     return make_encode_context(media,"h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
 }
-
+/*
+inline AVCodecContext make_encode_context_h264(AVFormatContext& media,int width, int height, int fps) 
+{
+    //This should call with a different context name and pixel format. Otherwise Okay I think.
+    return make_encode_context(media,"h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
+}
+*/
 inline void bind_hardware_frames_context(AVCodecContext& ctx, int width, int height, ::AVPixelFormat hw_pix_fmt,::AVPixelFormat sw_pix_fmt)
 {
     ::AVBufferRef *hw_device_ctx = nullptr;

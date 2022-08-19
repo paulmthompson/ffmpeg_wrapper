@@ -18,6 +18,7 @@ VideoEncoder::VideoEncoder() {
     frame_count = 0;
     file_path = "./";
     file_name = "test.mp4";
+    hardware_encode = true;
 }
 
 VideoEncoder::VideoEncoder(int width, int height, int fps) {
@@ -33,6 +34,7 @@ void VideoEncoder::setSavePath(std::string full_path) {
     this->file_name = path.filename().string(); 
 }
 
+// I should be able to specify the type of context here, software or hardware
 void VideoEncoder::createContext(int width, int height, int fps) {
     this->width = width;
     this->height = height;
@@ -42,12 +44,20 @@ void VideoEncoder::createContext(int width, int height, int fps) {
     auto mymedia = libav::avformat_open_output(full_path,"mp4");
     this->media = std::move(mymedia);
 
-    auto mycodecCtx = libav::make_encode_context_nvenc(this->media,this->width, this->height, this->fps);
-    this->codecCtx = std::move(mycodecCtx);
+    //If hardware
+    if (hardware_encode) {
+        auto mycodecCtx = libav::make_encode_context_nvenc(this->media,this->width, this->height, this->fps);
+        this->codecCtx = std::move(mycodecCtx);
+    }  else {
+        //If software - TODO
+        std::cout << "Software encoding not supported at this time" << std::endl;
+    }
 
     this->frame_count = 0; //Reset frame count to zero
 }
 
+//If we want to hardware encode, we need to bind the hardware context
+//If not, we need to just make sure that we create any frames necessary for intermediate data receiving.
 void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
     
     this->frame = libav::av_frame_alloc();
@@ -63,6 +73,9 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
             libav::bind_hardware_frames_context_nvenc(this->codecCtx, this->width, this->height, libav::AV_PIX_FMT_NV12);
             this->frame->format = libav::AV_PIX_FMT_GRAY8;
             break;
+        case (RGB0):
+            libav::bind_hardware_frames_context_nvenc(this->codecCtx, this->width, this->height, libav::AV_PIX_FMT_NV12);
+            this->frame->format = libav::AV_PIX_FMT_RGB0;
         default:
             break;
     }
@@ -106,6 +119,18 @@ void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
     std::chrono::duration<double> elapsed2 = t3 - t2;
     //std::cout << "Elapsed time for scaling: " << elapsed1.count() << std::endl;
     //std::cout << "Elapsed time for encoding: " << elapsed2.count() << std::endl;
+
+    this->frame_count++;
+}
+
+void VideoEncoder::writeFrameRGB0(std::vector<uint32_t>& input_data) {
+
+    ::av_frame_make_writable(this->frame.get());
+    memcpy(this->frame->data[0],input_data.data(),this->height*this->width*sizeof(uint32_t));
+
+    libav::convert_frame(this->frame,this->frame_nv12);
+
+    libav::hardware_encode(this->media,this->codecCtx, this->frame_nv12,this->frame_count);
 
     this->frame_count++;
 }
