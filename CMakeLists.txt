@@ -8,12 +8,22 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#include(CTest)
-#enable_testing()
+#Best practice for rpath from Professional Cmake
+#set before defining library.
+#alternatively I think we can use set target properties after library is defined
+if(APPLE)
+        set(base @loader_path)
+else()
+        set(base $ORIGIN)
+endif()
 
-#set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-#set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-#include(CPack)
+include(GNUInstallDirs)
+file(RELATIVE_PATH relDir
+        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+)
+set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
+
 
 #Create Library
 set(Sources
@@ -89,49 +99,16 @@ install(RUNTIME_DEPENDENCY_SET appDeps
 
 ELSE()
 
-#set(MY_STRING "/home/vcpkg/test")
-#message(STATUS "MY_STRING = ${MY_STRING}")
-#string(REGEX MATCH ".+\\v\\c\\p\\k\\g.*" FIRST_LINE "${MY_STRING}")
-#string(REGEX MATCH ".*vcpkg.*" FIRST_LINE "${MY_STRING}")
-#message(STATUS "FIRST_LINE = ${FIRST_LINE}")
-
-set(FFMPEG_LIB_DIR "${FFMPEG_INCLUDE_DIRS}/../lib/")
-message(STATUS "Looking for ffmpeg libraries on linux: ")
-message(STATUS ${FFMPEG_LIB_DIR})
-
-set(FFMPEG_LIBS "libavcodec.so"
-                "libavformat.so"
-                "libavutil.so"
-                "libswscale.so"
-                "libswresample.so")
-
-list(TRANSFORM FFMPEG_LIBS PREPEND ${FFMPEG_LIB_DIR})
-
-message(STATUS ${FFMPEG_LIBS})
-
-foreach(X ${FFMPEG_LIBS})
-        if(EXISTS ${X})
-                message(STATUS "Found ffmpeg libs")
-        else()
-                message(STATUS "Could not find ffmpeg lib: ")
-                message(STATUS ${X})
-        endif()
-endforeach()
-
-INSTALL(FILES ${FFMPEG_LIBS} TYPE LIB)
-
-#install(RUNTIME_DEPENDENCY_SET appDeps
-#        PRE_EXCLUDE_REGEXES
-#                [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
-#                [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
-#                [[libpthread.*]] [[librt.*]] [[libz.*]]
-#        PRE_INCLUDE_REGEXES
-#                ".*vcpkg.*"
-#)
+install(RUNTIME_DEPENDENCY_SET appDeps
+        PRE_EXCLUDE_REGEXES
+                [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
+                [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
+                [[libpthread.*]] [[librt.*]] [[libz.*]]
+        PRE_INCLUDE_REGEXES
+                ".*vcpkg.*"
+)
 
 ENDIF()
-
-
 
 #Install the header files
 
