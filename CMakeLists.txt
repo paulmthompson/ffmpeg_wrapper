@@ -98,14 +98,16 @@ install(RUNTIME_DEPENDENCY_SET appDeps
 )
 
 ELSE()
-
+#I am going to exclude system ffmpeg and only use vcpkg to build. 
 install(RUNTIME_DEPENDENCY_SET appDeps
         PRE_EXCLUDE_REGEXES
                 [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
                 [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
                 [[libpthread.*]] [[librt.*]] [[libz.*]]
-        PRE_INCLUDE_REGEXES
-                ".*vcpkg.*"
+        POST_EXCLUDE_REGEXES
+                [[/lib/x86_64-linux-gnu/libavcodec.*]]
+                [[/lib/x86_64-linux-gnu/libavutil.*]]
+                [[/lib/x86_64-linux-gnu/libswresample.*]]
 )
 
 ENDIF()
