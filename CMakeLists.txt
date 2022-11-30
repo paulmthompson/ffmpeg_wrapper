@@ -24,6 +24,7 @@ file(RELATIVE_PATH relDir
 )
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
+set(VCPKG_MANIFEST_MODE ON)
 
 #Create Library
 set(Sources
