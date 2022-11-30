@@ -2,3 +2,4 @@ build
 Ffmpeg/lib
 Ffmpeg/include
 .vscode
+out
