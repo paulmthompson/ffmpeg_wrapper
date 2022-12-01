@@ -17,6 +17,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    
+    - name: "Set environmental variables"
+      shell: bash
+      run: |
+        echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
     - name: Configure CMake
       run: cmake --preset ${{matrix.os.short}}-${{matrix.compiler}}-release
