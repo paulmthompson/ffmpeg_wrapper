@@ -452,8 +452,16 @@ inline void convert_frame(AVFrame& frame_in, AVFrame& frame_out) {
 inline int av_open_best_stream(AVFormatContext& fmtCtx, AVMediaType type, int related_stream = -1)
 {
     int idx = -1;
-    ::AVCodec* codec = nullptr;
-    ::AVCodec** const pcodec = &codec;
+    
+    //https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg1862296.html
+    #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59,0,100)
+        ::AVCodec* codec = nullptr;
+        ::AVCodec** pcodec = &codec;
+    #else 
+        const ::AVCodec* codec = nullptr;
+        const ::AVCodec** pcodec = &codec;
+    #endif
+    
     if ((idx = ::av_find_best_stream(fmtCtx.get(), type, -1, related_stream, pcodec, 0)) < 0) {
         return -1;
     }
