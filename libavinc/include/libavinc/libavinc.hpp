@@ -453,7 +453,8 @@ inline int av_open_best_stream(AVFormatContext& fmtCtx, AVMediaType type, int re
 {
     int idx = -1;
     ::AVCodec* codec = nullptr;
-    if ((idx = ::av_find_best_stream(fmtCtx.get(), type, -1, related_stream, &codec, 0)) < 0) {
+    const auto pcodec = &codec;
+    if ((idx = ::av_find_best_stream(fmtCtx.get(), type, -1, related_stream, pcodec, 0)) < 0) {
         return -1;
     }
     auto codecCtx = AVCodecContext(::avcodec_alloc_context3(codec),

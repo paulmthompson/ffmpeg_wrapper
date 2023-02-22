@@ -17,13 +17,18 @@ class FrameBuffer {
 public:
     FrameBuffer();
     void buildFrameBuffer(int buf_size, libav::AVFrame frame);
-    void addFrametoBuffer(libav::AVFrame& frame, int pos, int last_key_frame);
+    void resetKeyFrame(const int frame) {
+        this->keyframe = frame;
+        std::fill(this->frame_buf_id.begin(),this->frame_buf_id.end(), -1);
+        }
+    void addFrametoBuffer(libav::AVFrame& frame, int pos);
     bool isFrameInBuffer(int frame);
     libav::AVFrame getFrameFromBuffer(int frame);
 
 private:
     std::vector<libav::AVFrame> frame_buf;
     std::vector<int64_t> frame_buf_id;
+    int keyframe; // The first index of each buffer is a keyframe from which we have decoded forward
 };
 
 class DLLOPT VideoDecoder {
@@ -56,6 +61,9 @@ private:
 
     int64_t getDuration() const {return media->duration;}
     int64_t getStartTime() const {return media->start_time;}
+
+    void seekToFrame(const int frame);
+
     std::vector<int64_t> pts; // We keep a vector of every pts value corresponding to each frame.
     std::vector<int64_t> i_frames;
     std::vector<int64_t> pkt_durations;
