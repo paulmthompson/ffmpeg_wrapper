@@ -13,13 +13,26 @@
 
 namespace ffmpeg_wrapper {
 
+class FrameBuffer {
+public:
+    FrameBuffer();
+    void buildFrameBuffer(int buf_size, libav::AVFrame frame);
+    void addFrametoBuffer(libav::AVFrame& frame, int pos, int last_key_frame);
+    bool isFrameInBuffer(int frame);
+    libav::AVFrame getFrameFromBuffer(int frame);
+
+private:
+    std::vector<libav::AVFrame> frame_buf;
+    std::vector<int64_t> frame_buf_id;
+};
+
 class DLLOPT VideoDecoder {
 
 public:
     VideoDecoder();
     VideoDecoder(const std::string& filename);
     void createMedia(const std::string& filename);
-    std::vector<uint8_t> getFrame(int frame_id, bool frame_by_frame = false);
+    std::vector<uint8_t> getFrame(const int frame_id, bool frame_by_frame = false);
 
     int getFrameCount() const {return frame_count;}
     int getWidth() const {return width;}
@@ -31,6 +44,7 @@ private:
 
     int frame_count;
     long long last_decoded_frame;
+    long long last_key_frame;
     int width;
     int height;
     int fps_num;
@@ -42,11 +56,15 @@ private:
 
     int64_t getDuration() const {return media->duration;}
     int64_t getStartTime() const {return media->start_time;}
-    std::vector<int64_t> pts;
+    std::vector<int64_t> pts; // We keep a vector of every pts value corresponding to each frame.
     std::vector<int64_t> i_frames;
     std::vector<int64_t> pkt_durations;
+
+    std::unique_ptr<FrameBuffer> frame_buf;
 };
 
+template <typename T>
+int find_buffer_size(std::vector<T>& vec);
 }
 
 #endif // VIDEODECODER_H

@@ -406,6 +406,19 @@ inline AVFrame av_frame_clone(const AVFrame& frame)
     return libav::av_frame_clone(frame.get());
 }
 
+inline void av_frame_free(AVFrame frame) {
+    auto pframe = frame.get();
+    //::av_frame_free(&pframe);
+}
+
+inline int av_frame_copy(AVFrame dst, AVFrame src) {
+    return ::av_frame_copy(dst.get(), src.get());
+}
+
+inline int av_frame_get_buffer(const AVFrame& frame) {
+    return ::av_frame_get_buffer(frame.get(),32);
+}
+
 inline AVFrame convert_frame(AVFrame& frame, int width_out, int height_out, ::AVPixelFormat pix_out)
 {
     ::SwsContext * pContext = ::sws_getContext(frame->width, frame->height, (::AVPixelFormat)frame->format,
