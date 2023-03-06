@@ -269,6 +269,11 @@ public:
         {
 
         }
+    
+    void flush_buffers() {
+        ::avcodec_flush_buffers(get());
+    }
+
 };
 class DLLOPT AVFormatContext : public AVFormatContextBase {
 public:
@@ -320,6 +325,11 @@ inline int av_seek_frame(AVFormatContext& ctx, flicks time, int idx = -1, int fl
         time_base =  ::av_get_time_base_q();
     }
     return ::av_seek_frame(ctx.get(), idx, av_rescale(time, time_base), flags);
+}
+
+inline int av_seek_frame(AVFormatContext& ctx, int64_t frame, int idx = -1, int flags = 0)
+{
+    return ::av_seek_frame(ctx.get(), idx, frame, flags);
 }
 
 inline AVFormatContext avformat_open_output(const std::string& url, std::string format_name = std::string())
@@ -514,6 +524,19 @@ inline AVCodecContext& find_open_video_stream(AVFormatContext& fmtCtx)
     return err;
 }
 
+/*
+Here we will take a packet, and read frames.
+This functional will have a normal end when there are no more frames in the packet and the EAGAIN error will be thrown
+Consequently, EAGAIN is considered normal and the entire function will return 0
+If a different error is returned from avcodec_receive_frame, the function stops and the error is propogated
+
+Note that there may be multiple frames in a packet, and . Consequently the 
+std::function passed should evaluate the timestamp of the frame that is returned because it may not be the one needed if there are multiple
+
+*This function currently does not account for B frames, which depend on previous AND future packets to be decoded*
+
+https://stackoverflow.com/questions/55354120/ffmpeg-avcodec-receive-frame-returns-averroreagain
+*/
 inline int avcodec_send_packet(AVFormatContext& fmtCtx, ::AVPacket* pkt,
     std::function<void(AVFrame)> onFrame)
 {

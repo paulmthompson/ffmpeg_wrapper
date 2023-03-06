@@ -29,6 +29,8 @@ private:
     std::vector<libav::AVFrame> frame_buf;
     std::vector<int64_t> frame_buf_id;
     int keyframe; // The first index of each buffer is a keyframe from which we have decoded forward
+    bool enable;
+    bool verbose;
 };
 
 class DLLOPT VideoDecoder {
@@ -42,6 +44,8 @@ public:
     int getFrameCount() const {return frame_count;}
     int getWidth() const {return width;}
     int getHeight() const {return height;}
+    std::vector<int64_t> getKeyFrames() const {return this->i_frames;}
+    int64_t nearest_iframe(int64_t frame_id);
 
 private:
     libav::AVFormatContext media; //This is a unique_ptr
@@ -56,17 +60,22 @@ private:
     int fps_denom;
     void yuv420togray8(std::shared_ptr<::AVFrame>& frame,std::vector<uint8_t>&);
 
-    int64_t nearest_iframe(int64_t frame_id);
-    int64_t find_frame_by_pts(int64_t pts);
+    bool verbose;
 
-    int64_t getDuration() const {return media->duration;}
-    int64_t getStartTime() const {return media->start_time;}
+    bool last_packet_decoded;
 
-    void seekToFrame(const int frame);
+    int64_t find_frame_by_pts(uint64_t pts);
 
-    std::vector<int64_t> pts; // We keep a vector of every pts value corresponding to each frame.
+    uint64_t getDuration() const {return media->duration;} // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t getStartTime() const {return media->start_time;} // This is in AV_TIME_BASE (1000000) fractional seconds
+
+    void seekToFrame(const int frame, bool keyframe = false);
+
+    std::vector<uint64_t> pts; // We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
     std::vector<int64_t> i_frames;
-    std::vector<int64_t> pkt_durations;
+    std::vector<uint64_t> pkt_durations;
+
+    std::vector<uint64_t> i_frame_pts;
 
     std::unique_ptr<FrameBuffer> frame_buf;
 };
