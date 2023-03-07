@@ -688,7 +688,16 @@ inline AVCodecContext make_encode_context(AVFormatContext& media,const std::stri
     codecCtx->time_base = ::AVRational({1,fps});
     codecCtx->framerate = ::AVRational({fps,1});
 
-    ::av_opt_set(codecCtx.get(),"preset","fast",0);
+    //::av_opt_set(codecCtx.get(),"preset","fast",0);
+    //https://trac.ffmpeg.org/ticket/1548
+    ::av_opt_set(codecCtx.get()->priv_data,"profile","baseline",AV_OPT_SEARCH_CHILDREN);
+    ::av_opt_set(codecCtx.get(),"bf","0",0);
+
+    std::cout << "Max b frames: " << codecCtx->max_b_frames << std::endl;
+
+    if (codecCtx->max_b_frames > 0) {
+        codecCtx->max_b_frames = 0;
+    }
 
     ::avcodec_parameters_from_context(videoStream->codecpar, codecCtx.get());
 
@@ -763,15 +772,33 @@ inline void DLLOPT hardware_encode(AVFormatContext& media,AVCodecContext& ctx, A
 
     auto pkt = av_packet_alloc();
 
+    // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
+
+    //hw_frame->pts = 2000 * frame_count;
+    //hw_frame->pkt_duration = 2000;
+    //hw_frame->pkt_dts = 2000 * frame_count;
+
+    //hw_frame->pts = frame_count;
     ::avcodec_send_frame(ctx.get(), hw_frame.get());
 
     ::avcodec_receive_packet(ctx.get(),pkt.get());
 
-    pkt->pts = 2000 * frame_count; // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
+    auto& track = media->streams[0];
+
+    //https://stackoverflow.com/questions/54491521/can-i-use-av-write-frame-instead-of-av-interleaved-write-frame
+    //Interleaved Write frame is preferred becuase the decoder takes care of any reordering
+    //av_interleaved_write_frame(media, 0, *pkt);
+    //::av_packet_rescale_ts(pkt.get(), FLICKS_TIMESCALE_Q, track->time_base);
+
+    pkt->pts = frame_count; 
     pkt->dts = pkt->pts;
     pkt->duration = 2000;
 
-    ::av_write_frame(media.get(), pkt.get());
+    err = ::av_write_frame(media.get(),pkt.get());
+
+    if (err < 0) {
+        std::cout << "Error writing frame " << frame_count << std::endl;
+    }
 
     ::av_packet_unref(pkt.get());
 }
