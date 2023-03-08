@@ -783,7 +783,7 @@ inline int DLLOPT hardware_encode_flush(AVFormatContext& media,AVCodecContext& c
     //::av_packet_rescale_ts(pkt.get(), FLICKS_TIMESCALE_Q, track->time_base);
 
     // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
-    pkt->pts = frame_count; 
+    pkt->pts = frame_count * 2000; 
     pkt->dts = pkt->pts;
     pkt->duration = 2000;
 
