@@ -113,6 +113,14 @@ install(RUNTIME_DEPENDENCY_SET appDeps
 
 ENDIF()
 
+#Setup Testing
+include(CTest)
+
+if (BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
+
+
 #Install the header files
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
