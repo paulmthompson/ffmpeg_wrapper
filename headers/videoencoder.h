@@ -27,13 +27,18 @@ public:
     void set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt);
     void openFile();
     void closeFile();
-    void writeFrameGray8(std::vector<uint8_t>& input_data);
+    int writeFrameGray8(std::vector<uint8_t>& input_data);
     void writeFrameRGB0(std::vector<uint32_t>& input_data);
 
     int getWidth() const {return width;}
     int getHeight() const {return height;}
 
     void setSavePath(std::string full_path);
+
+    void enterDrainMode() {
+        this->flush_state = true;
+        libav::encode_enter_drain_mode(this->media,this->codecCtx);
+    }
 
     
 
@@ -49,6 +54,7 @@ private:
     int height;
     int fps;
     bool hardware_encode;
+    bool flush_state;
 
     std::string encoder_name;
     std::string file_path;

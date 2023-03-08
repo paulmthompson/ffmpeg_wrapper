@@ -19,12 +19,14 @@ VideoEncoder::VideoEncoder() {
     file_path = "./";
     file_name = "test.mp4";
     hardware_encode = true;
+    flush_state = false;
 }
 
 VideoEncoder::VideoEncoder(int width, int height, int fps) {
     this->width = width;
     this->height = height;
     this->fps = fps;
+    flush_state = false;
 }
 
 //https://stackoverflow.com/questions/35530092/c-splitting-an-absolute-file-path/69990972#69990972
@@ -102,25 +104,32 @@ void VideoEncoder::closeFile() {
     ::avio_closep(&media->pb);
 }
 
-void VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
+int VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
 
-    ::av_frame_make_writable(this->frame.get());
-    memcpy(this->frame->data[0],input_data.data(),this->height*this->width);
+    int write_frame_err;
+    if (!this->flush_state) {
+        ::av_frame_make_writable(this->frame.get());
+        memcpy(this->frame->data[0],input_data.data(),this->height*this->width);
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-    //libav::AVFrame nvframe = libav::convert_frame(this->frame,this->width,this->height,::AV_PIX_FMT_NV12);
-    libav::convert_frame(this->frame,this->frame_nv12);
-    auto t2 = std::chrono::high_resolution_clock::now();
+        auto t1 = std::chrono::high_resolution_clock::now();
+        //libav::AVFrame nvframe = libav::convert_frame(this->frame,this->width,this->height,::AV_PIX_FMT_NV12);
+        libav::convert_frame(this->frame,this->frame_nv12);
+        auto t2 = std::chrono::high_resolution_clock::now();
 
-    libav::hardware_encode(this->media,this->codecCtx, this->frame_nv12,this->frame_count);
+        write_frame_err = libav::hardware_encode(this->media,this->codecCtx, this->frame_nv12,this->frame_count);
 
-    auto t3 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed1 = t2 - t1;
-    std::chrono::duration<double> elapsed2 = t3 - t2;
+        auto t3 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed1 = t2 - t1;
+        std::chrono::duration<double> elapsed2 = t3 - t2;
+    } else {
+        //We will send null packets to the encoder
+        write_frame_err = libav::hardware_encode_flush(this->media,this->codecCtx,this->frame_count);
+    }
     //std::cout << "Elapsed time for scaling: " << elapsed1.count() << std::endl;
     //std::cout << "Elapsed time for encoding: " << elapsed2.count() << std::endl;
 
     this->frame_count++;
+    return write_frame_err;
 }
 
 void VideoEncoder::writeFrameRGB0(std::vector<uint32_t>& input_data) {
