@@ -143,26 +143,28 @@ void VideoDecoder::createMedia(const std::string& filename) {
 
     this->last_decoded_frame = frame_count;
 
-    std::cout << "Frame number is " << this->frame_count << std::endl;
+    if (this->verbose) {
+        std::cout << "Frame number is " << this->frame_count << std::endl;
 
-    std::cout << "The start time is " << this->getStartTime() << std::endl;
-    std::cout << "The stream start time is " << this->media->streams[0]->start_time << std::endl;
-    std::cout << "The first pts is " << this->pts[0] << std::endl;
-    std::cout << "The second pts is " << this->pts[1] << std::endl;
+        std::cout << "The start time is " << this->getStartTime() << std::endl;
+        std::cout << "The stream start time is " << this->media->streams[0]->start_time << std::endl;
+        std::cout << "The first pts is " << this->pts[0] << std::endl;
+        std::cout << "The second pts is " << this->pts[1] << std::endl;
+    }
 
     auto& track = this->media->streams[0];
 
-    std::cout << "real_frame rate of stream " << track->r_frame_rate.num << " denom: " << track->r_frame_rate.den << std::endl;
-
-    int64_t divisor =  std::gcd((this->getDuration() ), (uint64_t) this->getFrameCount() * 1000000);
-
-    std::cout << "The greatest common factor of the duration and frame count is " << divisor << std::endl;
+    if (this->verbose) {
+        std::cout << "real_frame rate of stream " << track->r_frame_rate.num << " denom: " << track->r_frame_rate.den << std::endl;
+    }
 
     //Future calculations with frame rate use 1 / fps, so we swap numerator and denominator here
     this->fps_num = this->media->streams[0]->r_frame_rate.den;
     this->fps_denom = this->media->streams[0]->r_frame_rate.num;
-    std::cout << "FPS numerator " << fps_num << std::endl;
-    std::cout << "FPS denominator " << fps_denom << std::endl;
+    if (this->verbose) {
+        std::cout << "FPS numerator " << fps_num << std::endl;
+        std::cout << "FPS denominator " << fps_denom << std::endl;
+    }
 
     int largest_diff = find_buffer_size(this->i_frames);
 
@@ -175,8 +177,9 @@ void VideoDecoder::createMedia(const std::string& filename) {
         //frame_buf->buildFrameBuffer(largest_diff,frame);
     });
     
-
-    std::cout << "Buffer size set to " << largest_diff << std::endl;
+    if (this->verbose) {
+        std::cout << "Buffer size set to " << largest_diff << std::endl;
+    }
     
 }
 
@@ -315,7 +318,9 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
 
     std::chrono::duration<double> elapsed1 = t2 - t1;
 
-    std::cout << "Time for decoding was : " << elapsed1.count() << " for " << frames_decoded << " frames." << std::endl;
+    if (this->verbose) {
+        std::cout << "Time for decoding was : " << elapsed1.count() << " for " << frames_decoded << " frames." << std::endl;
+    }
     // 2/22/23 - Time results show decoding takes ~3ms a frame, which adds up if there are 100-200 frames to decode.
 
     this->last_decoded_frame =  find_frame_by_pts(this->pkt.get()->pts);

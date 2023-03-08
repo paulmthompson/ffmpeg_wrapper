@@ -693,7 +693,7 @@ inline AVCodecContext make_encode_context(AVFormatContext& media,const std::stri
     ::av_opt_set(codecCtx.get()->priv_data,"profile","baseline",AV_OPT_SEARCH_CHILDREN);
     ::av_opt_set(codecCtx.get(),"bf","0",0);
 
-    std::cout << "Max b frames: " << codecCtx->max_b_frames << std::endl;
+    //std::cout << "Max b frames: " << codecCtx->max_b_frames << std::endl;
 
     if (codecCtx->max_b_frames > 0) {
         codecCtx->max_b_frames = 0;
@@ -771,7 +771,7 @@ inline int DLLOPT hardware_encode_flush(AVFormatContext& media,AVCodecContext& c
     auto err = ::avcodec_receive_packet(ctx.get(),pkt.get());
 
     if (err == AVERROR_EOF) {
-        std::cout << "End flush complete at frame " << frame_count << std::endl;
+        //std::cout << "End flush complete at frame " << frame_count << std::endl;
         return 0;
     }
     

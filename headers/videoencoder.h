@@ -40,6 +40,11 @@ public:
         libav::encode_enter_drain_mode(this->media,this->codecCtx);
     }
 
+    // The verbose state will give us lots of info as different steps are run.
+    void setVerbose(bool verbose_state) {
+        this->verbose = verbose_state;
+    }
+
     
 
 private:
@@ -59,6 +64,8 @@ private:
     std::string encoder_name;
     std::string file_path;
     std::string file_name;
+
+    bool verbose;
 
 };
 

@@ -25,6 +25,10 @@ public:
     bool isFrameInBuffer(int frame);
     libav::AVFrame getFrameFromBuffer(int frame);
 
+    void setVerbose(bool verbose_state) {
+        this->verbose = verbose_state;
+    }
+
 private:
     std::vector<libav::AVFrame> frame_buf;
     std::vector<int64_t> frame_buf_id;
@@ -46,6 +50,11 @@ public:
     int getHeight() const {return height;}
     std::vector<int64_t> getKeyFrames() const {return this->i_frames;}
     int64_t nearest_iframe(int64_t frame_id);
+
+    void setVerbose(bool verbose_state) {
+        this->verbose = verbose_state;
+        this->frame_buf->setVerbose(verbose_state);
+    }
 
 private:
     libav::AVFormatContext media; //This is a unique_ptr
