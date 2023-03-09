@@ -692,6 +692,7 @@ inline AVCodecContext make_encode_context(AVFormatContext& media,const std::stri
     //https://trac.ffmpeg.org/ticket/1548
     ::av_opt_set(codecCtx.get()->priv_data,"profile","high",AV_OPT_SEARCH_CHILDREN);
     ::av_opt_set(codecCtx.get(),"bf","0",0);
+    ::av_opt_set(codecCtx.get(),"b","500k",0);
 
     //std::cout << "Max b frames: " << codecCtx->max_b_frames << std::endl;
 
