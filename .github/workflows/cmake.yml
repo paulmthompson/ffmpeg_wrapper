@@ -32,3 +32,6 @@ jobs:
     - name: Build
       run: cmake --build --preset ${{matrix.os.short}}-${{matrix.compiler}}-release
 
+    - name: Test
+      run: ctest --preset ${{matrix.os.short}}-${{matrix.compiler}}-release
+
