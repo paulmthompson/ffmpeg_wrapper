@@ -1,3 +1,5 @@
+![build](https://github.com/paulmthompson/ffmpeg_wrapper/actions/workflows/cmake.yml/badge.svg)
+
 # ffmpeg_wrapper
 Convenience functions and classes in c++ for interfacing with FFMPEG libraries. 
 
