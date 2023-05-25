@@ -33,7 +33,7 @@ jobs:
         echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
         
     - name: Install nasm
-      if: runner.os == 'Ubuntu'
+      if: runner.os == 'Linux'
       run: sudo apt-get install -y nasm
 
     - name: Configure CMake
