@@ -10,15 +10,22 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ {"os": ubuntu-latest, short: linux}]
-        compiler: [gcc,clang]
+        include:
+          - {"os": ubuntu-latest, short: linux, compiler: gcc, shell: bash}
+          - {"os": ubuntu-latest, short: linux, compiler: clang, shell: bash}
+          - {"os": windows-latest, short: windows, compiler: gcc, shell: msys2}
+          - {"os": windows-latest, short: windows, compiler: clang, shell: msys2}
+          - {"os": windows-latest, short: windows, compiler: msvc, shell: powershell}
 
-    runs-on: ${{matrix.os.os}}
+    runs-on: ${{matrix.os}}
 
     steps:
     - uses: actions/checkout@v3
 
     - uses: seanmiddleditch/gha-setup-ninja@master
+
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: runner.os == 'Windows' && matrix.compiler == 'msvc'
     
     - name: "Set environmental variables"
       shell: bash
@@ -26,14 +33,15 @@ jobs:
         echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
         
     - name: Install nasm
+      if: runner.os == 'Ubuntu'
       run: sudo apt-get install -y nasm
 
     - name: Configure CMake
-      run: cmake --preset ${{matrix.os.short}}-${{matrix.compiler}}-release
+      run: cmake --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
     - name: Build
-      run: cmake --build --preset ${{matrix.os.short}}-${{matrix.compiler}}-release
+      run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
     - name: Test
-      run: ctest --preset ${{matrix.os.short}}-${{matrix.compiler}}-release
+      run: ctest --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
