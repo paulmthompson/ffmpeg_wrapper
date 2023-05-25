@@ -18,6 +18,7 @@
           "value": "host=x64",
           "strategy": "external"
         },
+        "generator": "Ninja",
         "cacheVariables": {
           "CMAKE_TOOLCHAIN_FILE": {
             "type": "FILEPATH",
