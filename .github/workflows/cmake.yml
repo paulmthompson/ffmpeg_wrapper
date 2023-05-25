@@ -19,6 +19,10 @@ jobs:
 
     runs-on: ${{matrix.os}}
 
+    defaults:
+      run:
+        shell: '${{ matrix.shell }} {0}'
+
     steps:
     - uses: actions/checkout@v3
 
@@ -54,5 +58,5 @@ jobs:
       run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
     - name: Test
-      run: ctest --preset ${{matrix.short}}-${{matrix.compiler}}-release
-
+      run: ctest --preset ${{matrix.short}}-${{matrix.compiler}}-release -C ${{matrix.short}}-${{matrix.compiler}}-release
+      working-directory: ${{ github.workspace }}
