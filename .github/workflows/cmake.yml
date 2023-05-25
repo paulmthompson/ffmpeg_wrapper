@@ -26,6 +26,17 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows' && matrix.compiler == 'msvc'
+
+    - name: Add clang and and gcc to windows runner
+      uses: msys2/setup-msys2@v2
+      if: runner.os == 'Windows' && matrix.shell == 'msys2'
+      with:
+        update: true
+        install: >-
+          base-devel
+          mingw-w64-x86_64-clang
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
     
     - name: "Set environmental variables"
       shell: bash
