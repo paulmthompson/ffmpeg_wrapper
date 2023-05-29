@@ -43,6 +43,7 @@ set(Public_Headers
 )
 
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
+add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
 
 #https://github.com/microsoft/vcpkg/pull/19308
 find_package(PkgConfig REQUIRED)
