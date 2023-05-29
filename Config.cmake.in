@@ -16,7 +16,7 @@ if (NOT TARGET PkgConfig::FFMPEG)
     get_target_property(FFMPEG_INCLUDE_DIRS PkgConfig::FFMPEG
         INTERFACE_INCLUDE_DIRECTORIES)
 
-    set_target_properties(ffmpeg_wrapper::ffmpeg_wrapper PROPERTIES
+    set_target_properties(ffmpeg_wrapper PROPERTIES
     INTERFACE_LINK_LIBRARIES "PkgConfig::FFMPEG")
     
 endif()
