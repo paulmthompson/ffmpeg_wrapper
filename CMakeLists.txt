@@ -33,13 +33,13 @@ set(Sources
 )
 
 set(Headers
-    headers/videodecoder.h
-    headers/videoencoder.h
+    headers/ffmpeg_wrapper/videodecoder.h
+    headers/ffmpeg_wrapper/videoencoder.h
 )
 
 set(Public_Headers
-    headers/videodecoder.h
-    headers/videoencoder.h
+    headers/ffmpeg_wrapper/videodecoder.h
+    headers/ffmpeg_wrapper/videoencoder.h
 )
 
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
@@ -65,6 +65,7 @@ target_include_directories(ffmpeg_wrapper
                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
                            
                            PUBLIC
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers/ffmpeg_wrapper>"
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers>"
                            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
