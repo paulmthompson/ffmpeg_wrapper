@@ -63,7 +63,8 @@ add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
 FFMPEG is a dependancy of this project, specifically the libavinc interface library
 FFMPEG sublibraries are found using pkg-config
 
-#https://github.com/microsoft/vcpkg/pull/19308
+https://github.com/microsoft/vcpkg/pull/19308
+https://gist.github.com/xdlg/18830e1cdf53e2e20a435b77fb6d9dd5
 ]]
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
