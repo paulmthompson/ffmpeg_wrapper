@@ -1,22 +1,24 @@
 cmake_minimum_required(VERSION 3.24)
 project(ffmpeg_wrapper VERSION 0.1.0)
 
+#[[
+Best practice for looking for cmake modules cmake folder in root of the project
+Currently, this project does not have any cmake modules
+From Professional CMake Chapter 11 Modules
+]]
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#Best practice for rpath from Professional Cmake
-#set before defining library.
-#alternatively I think we can use set target properties after library is defined
+#[[
+Best practice for rpath from Professional Cmake regarding rpath (26.2.2)
+]]
 if(APPLE)
         set(base @loader_path)
 else()
         set(base $ORIGIN)
 endif()
-
 include(GNUInstallDirs)
 file(RELATIVE_PATH relDir
         ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
@@ -24,6 +26,10 @@ file(RELATIVE_PATH relDir
 )
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
+#[[
+Manifest mode from VCPKG will make all dependancies specified in vcpkg.json be associated and installed
+with this particular project
+]]
 set(VCPKG_MANIFEST_MODE ON)
 
 #Create Library
@@ -42,10 +48,23 @@ set(Public_Headers
     headers/ffmpeg_wrapper/videoencoder.h
 )
 
+#[[
+ffmpeg_wrapper is a shared library
+I am also creating an alias with the format that has the same structure as the library when it is imported as a target from find_package
+I think this helps with in-source builds, but I am not sure
+
+the nlohmann_json library also uses an alias, but I am not sure if it is for this purpose.
+CMake startup from c++ weekly also does this
+]]
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
 
+#[[
+FFMPEG is a dependancy of this project, specifically the libavinc interface library
+FFMPEG sublibraries are found using pkg-config
+
 #https://github.com/microsoft/vcpkg/pull/19308
+]]
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
                 libavcodec
@@ -60,9 +79,8 @@ add_subdirectory(libavinc)
 #add the include directories
 target_include_directories(ffmpeg_wrapper
                            PUBLIC
-                           #These are my directories
-#                           ${CMAKE_CURRENT_SOURCE_DIR}/headers
-                        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
+
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
                            
                            PUBLIC
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers/ffmpeg_wrapper>"
