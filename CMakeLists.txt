@@ -48,6 +48,14 @@ set(Public_Headers
     headers/ffmpeg_wrapper/videoencoder.h
 )
 
+#Setup Testing
+include(CTest)
+
+if (BUILD_TESTING)
+  enable_testing()
+endif()
+
+
 #[[
 ffmpeg_wrapper is a shared library
 I am also creating an alias with the format that has the same structure as the library when it is imported as a target from find_package
@@ -134,11 +142,7 @@ install(RUNTIME_DEPENDENCY_SET appDeps
 
 ENDIF()
 
-#Setup Testing
-include(CTest)
-
 if (BUILD_TESTING)
-  enable_testing()
   add_subdirectory(tests)
 endif()
 
