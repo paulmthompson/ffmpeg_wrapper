@@ -13,5 +13,5 @@ add_test(NAME cmake_add_subdirectory_configure
 )
 
 add_test(NAME cmake_add_subdirectory_build
-  COMMAND ${CMAKE_COMMAND} --build .
+  COMMAND ${CMAKE_COMMAND} --build . --target InSourceBuild
 )

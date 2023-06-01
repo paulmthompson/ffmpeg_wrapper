@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.24)
 
 project(ffmpeg_wrapper_test_suite)
 
-message(STATUS ${CMAKE_BINARY_DIR}/tests/video-encoder-tests)
-
 add_executable(ffmpeg_wrapper_test_suite
     test_main.cpp 
 )

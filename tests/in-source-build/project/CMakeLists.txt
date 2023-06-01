@@ -16,7 +16,7 @@ set(BUILD_TESTING OFF CACHE INTERNAL "")
 add_subdirectory(${ffmpeg_wrapper_source}
     ${CMAKE_CURRENT_BINARY_DIR}/ffmpeg_wrapper)
 
-add_executable(InSourceBuild main.cpp)  
+add_executable(InSourceBuild  EXCLUDE_FROM_ALL main.cpp)  
 
 target_link_libraries(InSourceBuild PRIVATE ffmpeg_wrapper::ffmpeg_wrapper)
 
