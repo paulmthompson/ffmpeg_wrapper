@@ -28,3 +28,9 @@ install(TARGETS libavinc
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+#[[
+Without this line, the headers will not be installed when ffmpeg_wrapper is used as a library
+Is this because the target libavinc is never installed?
+]]
+install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
