@@ -13,15 +13,29 @@ libavinc is a header only library, so we add the include directories as a interf
 Professional CMake 17.2.4
 ]]
 target_include_directories(libavinc 
-            INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>")
-
-message(STATUS "Looking for FFMPEG Include Directories: "  ${FFMPEG_INCLUDE_DIRS})            
-target_include_directories(libavinc INTERFACE ${FFMPEG_INCLUDE_DIRS})
+            INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+            )
 
 #[[
-Libavinc depends on ffmpeg. Pkg-config found these libraries, so we link to them here.
-]]
-target_link_libraries(libavinc INTERFACE PkgConfig::FFMPEG)
+Libavinc depends on ffmpeg.
+The following libraries and includes need to be linked as follows:
+https://github.com/microsoft/vcpkg/blob/master/ports/ffmpeg/usage
+
+Note that Interface means that targets that link to libavinc will need to be linked to ffmpeg as well.
+
+The BUILD_INTERFACE generator expression must be included here to avoid errors with ffmpeg being located in the build directory:
+https://www.reddit.com/r/cmake/comments/n9hue2/comment/gxqmtl8/
+]]   
+find_package(FFMPEG REQUIRED)
+target_include_directories(libavinc INTERFACE 
+    "$<BUILD_INTERFACE:${FFMPEG_INCLUDE_DIRS}>"
+    )
+target_link_directories(libavinc INTERFACE 
+    "$<BUILD_INTERFACE:${FFMPEG_LIBRARY_DIRS}>"
+    )
+target_link_libraries(libavinc INTERFACE 
+    ${FFMPEG_LIBRARIES}
+    )
 
 include(GNUInstallDirs)
 install(TARGETS libavinc

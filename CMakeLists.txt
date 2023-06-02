@@ -64,28 +64,14 @@ add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
 
 #[[
-FFMPEG is a dependancy of this project, specifically the libavinc interface library
-FFMPEG sublibraries are found using pkg-config
-
-https://github.com/microsoft/vcpkg/pull/19308
-https://gist.github.com/xdlg/18830e1cdf53e2e20a435b77fb6d9dd5
-]]
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
-                libavcodec
-                libavformat
-                libavutil
-                libswscale
-                libswresample
-                )
-#[[
 libavinc is the c++ wrapper around ffmpeg and includes many convenience methods.
-LIbavinc is header-only and defined as an interface library
-We can link it as private because libraries that link to ffmpeg_wrapper do not need to call libvavinc directly
+LIbavinc is a header-only wrapper around ffmpeg and defined as an interface library (meaning it is not built and doesn't create a unique object file)
+While libraries consuming ffmpeg_wrapper will not use libavinc directly, ffmpeg_wrapper does use libavinc in its header files, and consequently 
+libavinc needs to be installed as a target as well, and the dependancy should be declared PUBLIC.
 ]]
 add_subdirectory(libavinc)
 
-target_link_libraries(ffmpeg_wrapper PRIVATE libavinc)
+target_link_libraries(ffmpeg_wrapper PUBLIC libavinc)
 
 #[[
 Here I link the include directories for ffmpeg_wrapper.
@@ -96,14 +82,15 @@ Because we later install the target with the "INCLUDES DESTINATION" section, we 
 generator expression here because it would be redundant
 The include directories will be installed in CMAKE_INSTALL_INCLUDEDIR, so this is the location that will be used for installed builds
 Professional CMake 26.10
+
+We also want to include the libavinc include directory, also declared PUBLIC for reasons seen above for linking the library
 ]]
-target_include_directories(ffmpeg_wrapper
-                           #PUBLIC
-                           #"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
-                           
+target_include_directories(ffmpeg_wrapper               
                            PUBLIC
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers/ffmpeg_wrapper>"
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers>"
+
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
 )
 
 #[[
@@ -126,10 +113,11 @@ Here we define what is installed by the cmake install command.
 
 Here export ffmpeg_wrapperTargets names the export set that they belong too.
 The export set itself is installed later using teh install(EXPORT ffmpeg_wrapperTargets ...) command
-
 Professional CMake 26.2
+
+Note that libavinc must also be installed as a target since it is a PUBLIC dependancy of ffmpeg_wrapper
 ]]
-install(TARGETS ffmpeg_wrapper
+install(TARGETS ffmpeg_wrapper libavinc
         EXPORT ffmpeg_wrapperTargets
         LIBRARY 
                 DESTINATION ${CMAKE_INSTALL_LIBDIR}
