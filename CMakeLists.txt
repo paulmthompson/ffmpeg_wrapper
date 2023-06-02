@@ -43,17 +43,13 @@ set(Headers
     headers/ffmpeg_wrapper/videoencoder.h
 )
 
-set(Public_Headers
-    headers/ffmpeg_wrapper/videodecoder.h
-    headers/ffmpeg_wrapper/videoencoder.h
-)
-
-#Setup Testing
+#[[
+The CTest module helps with several testing functions.
+It defines the BUILD_TESTING cache variable that defaults to true, and also automatically calls enable_testing(), so this does not need to be called manually
+CTest should be included early in the top level CMakeLists.txt file
+Professional CMake 25.10.3
+]]
 include(CTest)
-
-if (BUILD_TESTING)
-  enable_testing()
-endif()
 
 
 #[[
@@ -82,25 +78,44 @@ pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
                 libswscale
                 libswresample
                 )
-
+#[[
+libavinc is the c++ wrapper around ffmpeg and includes many convenience methods.
+LIbavinc is header-only and defined as an interface library
+We can link it as private because libraries that link to ffmpeg_wrapper do not need to call libvavinc directly
+]]
 add_subdirectory(libavinc)
 
-#add the include directories
-target_include_directories(ffmpeg_wrapper
-                           PUBLIC
+target_link_libraries(ffmpeg_wrapper PRIVATE libavinc)
 
-                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
+#[[
+Here I link the include directories for ffmpeg_wrapper.
+I add both headers and headers/ffmpeg_wrapper so that they can be included with both ffmpeg_wrapper/video_encoder.h and video_encoder.h
+The BUILD_INTERFACCE is used to specify the location of in-source builds
+
+Because we later install the target with the "INCLUDES DESTINATION" section, we do NOT need to specify the INSTALL_INTERFACE
+generator expression here because it would be redundant
+The include directories will be installed in CMAKE_INSTALL_INCLUDEDIR, so this is the location that will be used for installed builds
+]]
+target_include_directories(ffmpeg_wrapper
+                           #PUBLIC
+                           #"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libavinc/include>"
                            
                            PUBLIC
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers/ffmpeg_wrapper>"
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/headers>"
-                           "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(ffmpeg_wrapper PRIVATE libavinc)
-
-# note that ${public_headers} has to be in quotes
+#[[
+Public headers are installed with their relative paths removed
+]]
+set(Public_Headers
+    headers/ffmpeg_wrapper/videodecoder.h
+    headers/ffmpeg_wrapper/videoencoder.h
+)
 set_target_properties(ffmpeg_wrapper PROPERTIES PUBLIC_HEADER "${Public_Headers}")
+
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 #install and create export set
 # install the target and create export-set
@@ -109,47 +124,47 @@ install(TARGETS ffmpeg_wrapper
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include/ffmpeg_wrapper # include/SomeLibrary
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ffmpeg_wrapper # include/SomeLibrary
 )
 
 install(TARGETS ffmpeg_wrapper RUNTIME_DEPENDENCY_SET appDeps)
 
 IF (WIN32)
 
-install(RUNTIME_DEPENDENCY_SET appDeps
-        PRE_EXCLUDE_REGEXES
-                [[api-ms-win-.*]] [[ext-ms-.*]] [[kernel32\.dll]] 
-                [[bcrypt.dll]] [[mfplat.dll]] [[msvcrt.dll]] [[ole32.dll]] [[secur32.dll]] [[user32.dll]] [[vcruntime140.dll]]
-                [[ws2_32.dll]]
-                [[libgcc_s_seh-1\.dll]] [[libstdc\+\+\-6.dll]] 
-        POST_EXCLUDE_REGEXES
-                [[.*/system32/.*\.dll]]
-)
+        install(RUNTIME_DEPENDENCY_SET appDeps
+                PRE_EXCLUDE_REGEXES
+                        [[api-ms-win-.*]] [[ext-ms-.*]] [[kernel32\.dll]] 
+                        [[bcrypt.dll]] [[mfplat.dll]] [[msvcrt.dll]] [[ole32.dll]] [[secur32.dll]] [[user32.dll]] [[vcruntime140.dll]]
+                        [[ws2_32.dll]]
+                        [[libgcc_s_seh-1\.dll]] [[libstdc\+\+\-6.dll]] 
+                POST_EXCLUDE_REGEXES
+                        [[.*/system32/.*\.dll]]
+        )       
 
 ELSE()
-#I am going to exclude system ffmpeg and only use vcpkg to build. 
-install(RUNTIME_DEPENDENCY_SET appDeps
-        PRE_EXCLUDE_REGEXES
-                [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
-                [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
-                [[libpthread.*]] [[librt.*]] [[libz.*]]
-        POST_EXCLUDE_REGEXES
-                [[/lib/x86_64-linux-gnu/libavcodec.*]]
-                [[/lib/x86_64-linux-gnu/libavutil.*]]
-                [[/lib/x86_64-linux-gnu/libswresample.*]]
+        #I am going to exclude system ffmpeg and only use vcpkg to build. 
+        install(RUNTIME_DEPENDENCY_SET appDeps
+                PRE_EXCLUDE_REGEXES
+                        [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
+                        [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
+                        [[libpthread.*]] [[librt.*]] [[libz.*]]
+                POST_EXCLUDE_REGEXES
+                        [[/lib/x86_64-linux-gnu/libavcodec.*]]
+                        [[/lib/x86_64-linux-gnu/libavutil.*]]
+                        [[/lib/x86_64-linux-gnu/libswresample.*]]
 )
 
 ENDIF()
 
+#[[
+BUILD_TESTING is a cache variable that defaults to true which was defined by the CTest module
+If we wish to run testing, we should add the tests subdirectory.
+]]
 if (BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
-
-#Install the header files
-
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 include(CMakePackageConfigHelpers)
 
