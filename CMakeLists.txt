@@ -54,11 +54,11 @@ include(CTest)
 
 #[[
 ffmpeg_wrapper is a shared library
-I am also creating an alias with the format that has the same structure as the library when it is imported as a target from find_package
-I think this helps with in-source builds, but I am not sure
 
-the nlohmann_json library also uses an alias, but I am not sure if it is for this purpose.
-CMake startup from c++ weekly also does this
+I am also creating an alias with the format that has the same structure as the library when it is imported as a target from find_package
+This is recommended practice so that the library can be linked to with ffmpeg_wrapper::ffmpeg_wrapper as an in-source build or 
+as a package installed with find_package.
+Professional CMake 17.4
 ]]
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
@@ -95,6 +95,7 @@ The BUILD_INTERFACCE is used to specify the location of in-source builds
 Because we later install the target with the "INCLUDES DESTINATION" section, we do NOT need to specify the INSTALL_INTERFACE
 generator expression here because it would be redundant
 The include directories will be installed in CMAKE_INSTALL_INCLUDEDIR, so this is the location that will be used for installed builds
+Professional CMake 26.10
 ]]
 target_include_directories(ffmpeg_wrapper
                            #PUBLIC
@@ -114,18 +115,32 @@ set(Public_Headers
 )
 set_target_properties(ffmpeg_wrapper PROPERTIES PUBLIC_HEADER "${Public_Headers}")
 
-
+#[[
+In general, it is not good practice to export all symbols from a shared library
+Specific class and functions can be exported using the __declspec(dllexport) keywords in the header file
+]]
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-#install and create export set
-# install the target and create export-set
+#[[
+Here we define what is installed by the cmake install command.
+
+Here export ffmpeg_wrapperTargets names the export set that they belong too.
+The export set itself is installed later using teh install(EXPORT ffmpeg_wrapperTargets ...) command
+
+Professional CMake 26.2
+]]
 install(TARGETS ffmpeg_wrapper
         EXPORT ffmpeg_wrapperTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ffmpeg_wrapper # include/SomeLibrary
+        LIBRARY 
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE 
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME 
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES 
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PUBLIC_HEADER 
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ffmpeg_wrapper # include/SomeLibrary
 )
 
 install(TARGETS ffmpeg_wrapper RUNTIME_DEPENDENCY_SET appDeps)
@@ -153,7 +168,7 @@ ELSE()
                         [[/lib/x86_64-linux-gnu/libavcodec.*]]
                         [[/lib/x86_64-linux-gnu/libavutil.*]]
                         [[/lib/x86_64-linux-gnu/libswresample.*]]
-)
+        )
 
 ENDIF()
 
