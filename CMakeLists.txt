@@ -51,6 +51,22 @@ Professional CMake 25.10.3
 ]]
 include(CTest)
 
+if (WIN32)
+        if (MSVC)
+                set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /fsanitize=address")
+                message(STATUS "This is a Debug build for MSVC, enabling address sanitizer")
+        endif()
+endif()
+
+if (UNIX)
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+                message(STATUS "This is a Debug build for Clang, enabling address sanitizer")
+                set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GCC")
+                set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+        endif()
+endif()
+
 
 #[[
 ffmpeg_wrapper is a shared library
