@@ -329,8 +329,16 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
 
 void VideoDecoder::yuv420togray8(libav::AVFrame& frame,std::vector<uint8_t>& output)
 {
+    auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, this->width, this->height, AV_PIX_FMT_GRAY8);
     memcpy(output.data(),frame2->data[0],this->height*this->width);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed = t2 - t1;
+
+    if (this->verbose) {
+        std::cout << "Time for conversion was : " << elapsed.count() << std::endl;
+    }
 }
 
 int64_t VideoDecoder::nearest_iframe(int64_t frame_id) {

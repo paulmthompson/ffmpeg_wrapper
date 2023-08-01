@@ -81,7 +81,7 @@ inline ::AVDictionary* av_dictionary(const AVDictionary& dict)
 {
     ::AVDictionary* d = nullptr;
     for (const auto& entry : dict) {
-        av_dict_set(&d, entry.first.c_str(), entry.second.c_str(), 0);
+        ::av_dict_set(&d, entry.first.c_str(), entry.second.c_str(), 0);
     }
     return d;
 }
@@ -89,8 +89,8 @@ inline ::AVDictionary* av_dictionary(const AVDictionary& dict)
 inline AVDictionary av_dictionary(const ::AVDictionary* dict)
 {
     libav::AVDictionary d;
-    AVDictionaryEntry* entry = nullptr;
-    while ((entry = av_dict_get(dict, "", entry, AV_DICT_IGNORE_SUFFIX))) {
+    ::AVDictionaryEntry* entry = nullptr;
+    while ((entry = ::av_dict_get(dict, "", entry, AV_DICT_IGNORE_SUFFIX))) {
         d.emplace(entry->key, entry->value);
     }
     return d;
@@ -99,7 +99,7 @@ inline AVDictionary av_dictionary(const ::AVDictionary* dict)
 inline void av_dict_free(::AVDictionary* d)
 {
     if (d) {
-        av_dict_free(&d);
+        ::av_dict_free(&d);
     }
 }
 
