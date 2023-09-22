@@ -5,7 +5,9 @@
         {
             "name": "ffmpeg",
             "default-features": true,
-            "features": ["nvcodec"]
+            "features": ["nvcodec"],
+            "version>=": "4.4.1"
         }
-    ]
+    ],
+    "builtin-baseline": "e61fc593761de7e8594357813b7b0ee2922ec291"
 }
