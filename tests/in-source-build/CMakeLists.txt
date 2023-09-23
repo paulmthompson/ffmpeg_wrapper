@@ -9,6 +9,7 @@ add_test(NAME cmake_add_subdirectory_configure
     -Dffmpeg_wrapper_source=${PROJECT_SOURCE_DIR}
     -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
     -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}
+    -DVCPKG_HOST_TRIPLET=${VCPKG_HOST_TRIPLET}
     ${CMAKE_CURRENT_SOURCE_DIR}/project
 )
 
