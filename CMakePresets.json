@@ -37,10 +37,7 @@
           "type": "equals",
           "lhs": "${hostSystemName}",
           "rhs": "Windows"
-        },
-        "cacheVariables": {
-            "VCPKG_TARGET_TRIPLET": "x64-windows"
-          }
+        }
       },
       {
         "name": "linux-base",
@@ -149,29 +146,49 @@
 
       {
         "name": "windows-gcc-release",
-        "inherits": ["windows-base","gcc-release-base"]
+        "inherits": ["windows-base","gcc-release-base"],
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+          "VCPKG_HOST_TRIPLET": "x64-mingw-dynamic"
+      }
       },
       {
         "name": "windows-gcc-debug",
-        "inherits": ["windows-base","gcc-debug-base"]
+        "inherits": ["windows-base","gcc-debug-base"],
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+          "VCPKG_HOST_TRIPLET": "x64-mingw-dynamic"
+      }
       },
 
       {
         "name": "windows-clang-release",
-        "inherits": ["windows-base","clang-release-base"]
+        "inherits": ["windows-base","clang-release-base"],
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
       },
       {
         "name": "windows-clang-debug",
-        "inherits": ["windows-base","clang-debug-base"]
+        "inherits": ["windows-base","clang-debug-base"],
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
       },
 
       {
         "name": "windows-msvc-release",
-        "inherits": ["windows-base","msvc-release-base"]
+        "inherits": ["windows-base","msvc-release-base"],
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
       },
       {
         "name": "windows-msvc-debug",
-        "inherits": ["windows-base","msvc-debug-base"]
+        "inherits": ["windows-base","msvc-debug-base"],
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
       },
 
       {
