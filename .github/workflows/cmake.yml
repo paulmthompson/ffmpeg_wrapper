@@ -41,6 +41,12 @@ jobs:
           mingw-w64-x86_64-clang
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-cmake
+
+    - name: Download older binutils to avoid windows ffmpeg mingw bug
+      if: runner.os == 'Windows' && matrix.shell == 'msys2'
+      run: |
+        curl --output mingw-w64-x86_64-binutils-2.40-2-any.pkg.tar.zst --url https://repo.msys2.org/mingw/mingw64
+        pacman --noconfirm -U mingw-w64-x86_64-binutils-2.40-2-any.pkg.tar.zst
     
     - name: "Set environmental variables"
       shell: bash
