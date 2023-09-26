@@ -784,9 +784,10 @@ inline int DLLOPT hardware_encode_flush(AVFormatContext& media,AVCodecContext& c
     //::av_packet_rescale_ts(pkt.get(), FLICKS_TIMESCALE_Q, track->time_base);
 
     // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
-    pkt->pts = frame_count * 2000; 
+    const int64_t duration = 2000;
+    pkt->pts = static_cast<int64_t>(frame_count) * duration; 
     pkt->dts = pkt->pts;
-    pkt->duration = 2000;
+    pkt->duration = duration;
 
     err = ::av_write_frame(media.get(),pkt.get());
 
@@ -831,9 +832,10 @@ inline int DLLOPT hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AV
     //::av_packet_rescale_ts(pkt.get(), FLICKS_TIMESCALE_Q, track->time_base);
 
     // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
-    pkt->pts = frame_count * 2000; 
+    const int64_t duration = 2000;
+    pkt->pts = static_cast<int64_t>(frame_count) * duration; 
     pkt->dts = pkt->pts;
-    pkt->duration = 2000;
+    pkt->duration = duration;
 
     err = ::av_write_frame(media.get(),pkt.get());
 
