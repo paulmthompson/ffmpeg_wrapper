@@ -1,6 +1,9 @@
 build
 Ffmpeg/lib
 Ffmpeg/include
+
 .vscode
+.idea
+
 out
 Testing
