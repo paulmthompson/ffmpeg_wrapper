@@ -43,7 +43,7 @@ public:
     VideoDecoder();
     VideoDecoder(const std::string& filename);
     void createMedia(const std::string& filename);
-    std::vector<uint8_t> getFrame(const int frame_id, bool frame_by_frame = false);
+    std::vector<uint8_t> getFrame(const int frame_id, bool isFrameByFrameMode = false);
 
     int getFrameCount() const {return _frame_count;}
     int getWidth() const {return _width;}
