@@ -30,42 +30,42 @@ public:
     int writeFrameGray8(std::vector<uint8_t>& input_data);
     void writeFrameRGB0(std::vector<uint32_t>& input_data);
 
-    int getWidth() const {return width;}
-    int getHeight() const {return height;}
+    int getWidth() const {return _width;}
+    int getHeight() const {return _height;}
 
     void setSavePath(std::string full_path);
 
     void enterDrainMode() {
-        this->flush_state = true;
-        libav::encode_enter_drain_mode(this->media,this->codecCtx);
+        _flush_state = true;
+        libav::encode_enter_drain_mode(_media, _codecCtx);
     }
 
     // The verbose state will give us lots of info as different steps are run.
-    void setVerbose(bool verbose_state) {
-        this->verbose = verbose_state;
+    void setVerbose(bool verbose) {
+        _verbose = verbose;
     }
 
     
 
 private:
-    libav::AVFormatContext media;
-    libav::AVCodecContext codecCtx; 
+    libav::AVFormatContext _media;
+    libav::AVCodecContext _codecCtx;
     //libav::AVStream;
-    libav::AVFrame frame; //This frame has the same format as the camera
-    libav::AVFrame frame_nv12; // This frame must be compatible with hardware encoding (nv12). frame will be scaled to frame_2.
+    libav::AVFrame _frame; //This frame has the same format as the camera
+    libav::AVFrame _frame_nv12; // This frame must be compatible with hardware encoding (nv12). frame will be scaled to frame_2.
 
-    int frame_count;
-    int width;
-    int height;
-    int fps;
-    bool hardware_encode;
-    bool flush_state;
+    int _frame_count;
+    int _width;
+    int _height;
+    int _fps;
+    bool _hardware_encode;
+    bool _flush_state;
 
-    std::string encoder_name;
-    std::string file_path;
-    std::string file_name;
+    std::string _encoder_name;
+    std::string _file_path;
+    std::string _file_name;
 
-    bool verbose;
+    bool _verbose;
 
 };
 
