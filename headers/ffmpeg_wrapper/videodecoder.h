@@ -67,18 +67,18 @@ private:
     int _height;
     int _fps_num;
     int _fps_denom;
-    void yuv420togray8(std::shared_ptr<::AVFrame>& frame,std::vector<uint8_t>&);
+    void _yuv420togray8(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
 
     bool _verbose;
 
     bool _last_packet_decoded;
 
-    int64_t find_frame_by_pts(uint64_t pts);
+    int64_t _findFrameByPts(uint64_t pts);
 
-    uint64_t getDuration() const {return _media->duration;} // This is in AV_TIME_BASE (1000000) fractional seconds
-    uint64_t getStartTime() const {return _media->start_time;} // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t _getDuration() const {return _media->duration;} // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t _getStartTime() const {return _media->start_time;} // This is in AV_TIME_BASE (1000000) fractional seconds
 
-    void seekToFrame(const int frame, bool keyframe = false);
+    void _seekToFrame(const int frame, bool keyframe = false);
 
     std::vector<uint64_t> _pts; // We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
     std::vector<int64_t> _i_frames;

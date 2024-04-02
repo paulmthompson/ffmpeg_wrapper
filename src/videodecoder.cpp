@@ -146,7 +146,7 @@ void VideoDecoder::createMedia(const std::string& filename) {
     if (_verbose) {
         std::cout << "Frame number is " << _frame_count << std::endl;
 
-        std::cout << "The start time is " << getStartTime() << std::endl;
+        std::cout << "The start time is " << _getStartTime() << std::endl;
         std::cout << "The stream start time is " << _media->streams[0]->start_time << std::endl;
         std::cout << "The first pts is " << _pts[0] << std::endl;
         std::cout << "The second pts is " << _pts[1] << std::endl;
@@ -169,8 +169,8 @@ void VideoDecoder::createMedia(const std::string& filename) {
     int largest_diff = find_buffer_size(_i_frames);
 
     //Now let's decode the first frame
-    
-    seekToFrame(0);
+
+        _seekToFrame(0);
     
     libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
     // Use that decoded frame to set up the frame buffer properties
@@ -210,7 +210,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
     const int64_t desired_nearest_iframe = nearest_iframe(desired_frame);
 
     int64_t this_pkt_pts = _pkt.get()->pts;
-    auto this_pkt_frame = find_frame_by_pts(this_pkt_pts);
+    auto this_pkt_frame = _findFrameByPts(this_pkt_pts);
 
     bool packet_decoded = false;
     bool keyframe = false;
@@ -224,7 +224,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
             std::cout << "Desired frame is " << desired_frame << " and it is already in the buffer" << std::endl;
         }
         auto frame = _frame_buf->getFrameFromBuffer(desired_frame);
-        yuv420togray8(frame, output); // Convert the frame to gray format to render
+        _yuv420togray8(frame, output); // Convert the frame to gray format to render
 
         return output;
 
@@ -237,9 +237,9 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
             if (_verbose) {
                 std::cout << "The desired frame is a keyframe" << std::endl;
             }
-            seekToFrame(desired_frame, true);
+            _seekToFrame(desired_frame, true);
         } else {
-            seekToFrame(desired_frame);
+            _seekToFrame(desired_frame);
         }
 
     } else if (desired_nearest_iframe > this_pkt_frame) {
@@ -252,9 +252,9 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
             if (_verbose) {
                 std::cout << "The desired frame is a keyframe" << std::endl;
             }
-            seekToFrame(desired_frame, true);
+            _seekToFrame(desired_frame, true);
         } else {
-            seekToFrame(desired_frame);
+            _seekToFrame(desired_frame);
         }
         
 
@@ -280,7 +280,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
     while (!frame_to_display)
     {
         //this_pkt_pts = pkt.get()->pts;
-        this_pkt_frame = find_frame_by_pts(_pkt.get()->pts);
+        this_pkt_frame = _findFrameByPts(_pkt.get()->pts);
         packet_decoded = false;
         auto frame_pts = _pkt.get()->pts;
 
@@ -296,7 +296,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
                         std::cout << "frame pts matches desired frame" << std::endl;
                     }
                     frame_to_display = true;
-                    yuv420togray8(frame,output); 
+                    _yuv420togray8(frame, output);
                 }
                 if (_verbose) {
                     std::cout << "Timestamp: " << frame_pts << std::endl;
@@ -311,7 +311,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
     }
 
     if (_verbose) {
-        std::cout << "Returning frame number : " << find_frame_by_pts(_pkt.get()->pts) << std::endl;
+        std::cout << "Returning frame number : " << _findFrameByPts(_pkt.get()->pts) << std::endl;
     }
 
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -323,11 +323,11 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool frame_b
     }
     // 2/22/23 - Time results show decoding takes ~3ms a frame, which adds up if there are 100-200 frames to decode.
 
-    _last_decoded_frame =  find_frame_by_pts(_pkt.get()->pts);
+    _last_decoded_frame = _findFrameByPts(_pkt.get()->pts);
     return output;
 }
 
-void VideoDecoder::yuv420togray8(libav::AVFrame& frame,std::vector<uint8_t>& output)
+void VideoDecoder::_yuv420togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t>& output)
 {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
@@ -355,7 +355,7 @@ int64_t VideoDecoder::nearest_iframe(int64_t frame_id) {
     return nearest_i_frame;
 }
 
-void VideoDecoder::seekToFrame(const int frame, bool keyframe) {
+void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
 
     //https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html
     //stream_index	If stream_index is (-1), a default stream is selected, and timestamp is automatically converted from AV_TIME_BASE units to the stream specific time_base.
@@ -393,7 +393,7 @@ void VideoDecoder::seekToFrame(const int frame, bool keyframe) {
         _pkt = std::move(_media.begin());
     }
 
-    _last_key_frame = find_frame_by_pts(_pkt.get()->pts);
+    _last_key_frame = _findFrameByPts(_pkt.get()->pts);
     _frame_buf->resetKeyFrame(_last_key_frame);
 
     if (_verbose) {
@@ -418,12 +418,12 @@ By searching the dictionary
 Note, this the pts vector should be in increasing order, so a more efficient search method 
 could be used here
 */
-int64_t VideoDecoder::find_frame_by_pts(uint64_t this_pts) {
+int64_t VideoDecoder::_findFrameByPts(uint64_t pts) {
 
     int64_t matching_frame = 0;
 
     for (int i = 0; i < _pts.size(); i++) {
-        if (_pts[i] == this_pts) {
+        if (_pts[i] == pts) {
             matching_frame = i;
             break;
         }
