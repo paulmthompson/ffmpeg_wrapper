@@ -18,23 +18,23 @@ public:
     FrameBuffer();
     void buildFrameBuffer(int buf_size, libav::AVFrame frame);
     void resetKeyFrame(const int frame) {
-        this->keyframe = frame;
-        std::fill(this->frame_buf_id.begin(),this->frame_buf_id.end(), -1);
+        _keyframe = frame;
+        std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
         }
     void addFrametoBuffer(libav::AVFrame& frame, int pos);
     bool isFrameInBuffer(int frame);
     libav::AVFrame getFrameFromBuffer(int frame);
 
-    void setVerbose(bool verbose_state) {
-        this->verbose = verbose_state;
+    void setVerbose(bool verbose) {
+        _verbose = verbose;
     }
 
 private:
-    std::vector<libav::AVFrame> frame_buf;
-    std::vector<int64_t> frame_buf_id;
-    int keyframe; // The first index of each buffer is a keyframe from which we have decoded forward
-    bool enable;
-    bool verbose;
+    std::vector<libav::AVFrame> _frame_buf;
+    std::vector<int64_t> _frame_buf_id;
+    int _keyframe; // The first index of each buffer is a keyframe from which we have decoded forward
+    bool _enable;
+    bool _verbose;
 };
 
 class DLLOPT VideoDecoder {
@@ -45,48 +45,48 @@ public:
     void createMedia(const std::string& filename);
     std::vector<uint8_t> getFrame(const int frame_id, bool frame_by_frame = false);
 
-    int getFrameCount() const {return frame_count;}
-    int getWidth() const {return width;}
-    int getHeight() const {return height;}
-    std::vector<int64_t> getKeyFrames() const {return this->i_frames;}
+    int getFrameCount() const {return _frame_count;}
+    int getWidth() const {return _width;}
+    int getHeight() const {return _height;}
+    std::vector<int64_t> getKeyFrames() const {return _i_frames;}
     int64_t nearest_iframe(int64_t frame_id);
 
-    void setVerbose(bool verbose_state) {
-        this->verbose = verbose_state;
-        this->frame_buf->setVerbose(verbose_state);
+    void setVerbose(bool verbose) {
+        _verbose = verbose;
+        _frame_buf->setVerbose(verbose);
     }
 
 private:
-    libav::AVFormatContext media; //This is a unique_ptr
-    libav::AVPacket pkt; //This is a unique ptr
+    libav::AVFormatContext _media; //This is a unique_ptr
+    libav::AVPacket _pkt; //This is a unique ptr
 
-    int frame_count;
-    long long last_decoded_frame;
-    long long last_key_frame;
-    int width;
-    int height;
-    int fps_num;
-    int fps_denom;
+    int _frame_count;
+    long long _last_decoded_frame;
+    long long _last_key_frame;
+    int _width;
+    int _height;
+    int _fps_num;
+    int _fps_denom;
     void yuv420togray8(std::shared_ptr<::AVFrame>& frame,std::vector<uint8_t>&);
 
-    bool verbose;
+    bool _verbose;
 
-    bool last_packet_decoded;
+    bool _last_packet_decoded;
 
     int64_t find_frame_by_pts(uint64_t pts);
 
-    uint64_t getDuration() const {return media->duration;} // This is in AV_TIME_BASE (1000000) fractional seconds
-    uint64_t getStartTime() const {return media->start_time;} // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t getDuration() const {return _media->duration;} // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t getStartTime() const {return _media->start_time;} // This is in AV_TIME_BASE (1000000) fractional seconds
 
     void seekToFrame(const int frame, bool keyframe = false);
 
-    std::vector<uint64_t> pts; // We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
-    std::vector<int64_t> i_frames;
-    std::vector<uint64_t> pkt_durations;
+    std::vector<uint64_t> _pts; // We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
+    std::vector<int64_t> _i_frames;
+    std::vector<uint64_t> _pkt_durations;
 
-    std::vector<uint64_t> i_frame_pts;
+    std::vector<uint64_t> _i_frame_pts;
 
-    std::unique_ptr<FrameBuffer> frame_buf;
+    std::unique_ptr<FrameBuffer> _frame_buf;
 };
 
 template <typename T>
