@@ -1,4 +1,6 @@
+#=============================
 # Preamble
+#=============================
 cmake_minimum_required(VERSION 3.24)
 project(ffmpeg_wrapper VERSION 0.1.0)
 #[[
@@ -9,6 +11,10 @@ Professional CMake 25.10.3
 ]]
 include(CTest)
 
+
+#=============================
+# Project Wide Setup
+#=============================
 
 #[[
 Best practice for looking for cmake modules cmake folder in root of the project
@@ -40,6 +46,16 @@ Manifest mode from VCPKG will make all dependancies specified in vcpkg.json be a
 with this particular project
 ]]
 set(VCPKG_MANIFEST_MODE ON)
+
+#=============================
+# Externally Provided Content
+#=============================
+
+add_subdirectory(dependencies)
+
+#=============================
+# Main Build Targets
+#=============================
 
 #Create Library
 set(Sources
@@ -79,9 +95,6 @@ Professional CMake 17.4
 ]]
 add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
-
-
-add_subdirectory(dependencies)
 
 target_link_libraries(ffmpeg_wrapper PUBLIC libavinc)
 
