@@ -47,4 +47,4 @@ install(TARGETS libavinc
 Without this line, the headers will not be installed when ffmpeg_wrapper is used as a library
 Is this because the target libavinc is never installed?
 ]]
-install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+install(DIRECTORY include DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

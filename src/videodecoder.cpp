@@ -20,7 +20,7 @@ FrameBuffer::FrameBuffer() {
 void FrameBuffer::buildFrameBuffer(int buf_size, libav::AVFrame frame) {
 
     _frame_buf.clear();
-    for (int i=0; i < buf_size; i++) {
+    for (int i = 0; i < buf_size; i++) {
         _frame_buf.push_back(libav::av_frame_alloc());
         _frame_buf[i]->format = frame->format;
         _frame_buf[i]->width = frame->width;
@@ -35,17 +35,17 @@ void FrameBuffer::buildFrameBuffer(int buf_size, libav::AVFrame frame) {
     std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
 }
 
-void FrameBuffer::addFrametoBuffer(libav::AVFrame& frame, int pos) {
+void FrameBuffer::addFrametoBuffer(libav::AVFrame &frame, int pos) {
 
     if (_enable) {
         //Check if the position is already in the buffer
-        if ( isFrameInBuffer(pos)) {
+        if (isFrameInBuffer(pos)) {
             if (_verbose) {
                 std::cout << "Frame " << pos << " is already in the buffer" << std::endl;
             }
         } else {
 
-            if (pos - _keyframe > _frame_buf.size() - 1 ) {
+            if (pos - _keyframe > _frame_buf.size() - 1) {
                 if (_verbose) {
                     std::cout << "Error, buffer index equal to " << pos - _keyframe << std::endl;
                 }
@@ -67,8 +67,7 @@ libav::AVFrame FrameBuffer::getFrameFromBuffer(int frame) {
     return _frame_buf[buf_pos];
 }
 
-VideoDecoder::VideoDecoder()
-{
+VideoDecoder::VideoDecoder() {
 
     _frame_count = 0;
     _last_decoded_frame = 0;
@@ -81,7 +80,7 @@ VideoDecoder::VideoDecoder()
     _frame_buf = std::make_unique<FrameBuffer>();
 }
 
-VideoDecoder::VideoDecoder(const std::string& filename) {
+VideoDecoder::VideoDecoder(const std::string &filename) {
     createMedia(filename);
 }
 
@@ -101,7 +100,7 @@ https://stackoverflow.com/questions/40275242/libav-ffmpeg-copying-decoded-video-
 
 */
 
-void VideoDecoder::createMedia(const std::string& filename) {
+void VideoDecoder::createMedia(const std::string &filename) {
 
     auto mymedia = libav::avformat_open_input(filename);
     _media = std::move(mymedia);
@@ -112,8 +111,7 @@ void VideoDecoder::createMedia(const std::string& filename) {
     Loop through and get the PTS values, which we will use to determine if we are at the correct frame or not in the future.
     */
     //seekToFrame(0,true);
-    for (auto& pkg : _media)
-    {
+    for (auto &pkg: _media) {
         if (pkg.flags & AV_PKT_FLAG_KEY) {
             // this is I-frame. We may want to keep a list of these for fast scrolling.
             _i_frames.push_back((_frame_count));
@@ -152,10 +150,11 @@ void VideoDecoder::createMedia(const std::string& filename) {
         std::cout << "The second pts is " << _pts[1] << std::endl;
     }
 
-    auto& track = _media->streams[0];
+    auto &track = _media->streams[0];
 
     if (_verbose) {
-        std::cout << "real_frame rate of stream " << track->r_frame_rate.num << " denom: " << track->r_frame_rate.den << std::endl;
+        std::cout << "real_frame rate of stream " << track->r_frame_rate.num << " denom: " << track->r_frame_rate.den
+                  << std::endl;
     }
 
     //Future calculations with frame rate use 1 / fps, so we swap numerator and denominator here
@@ -170,10 +169,10 @@ void VideoDecoder::createMedia(const std::string& filename) {
 
     //Now let's decode the first frame
 
-        _seekToFrame(0);
+    _seekToFrame(0);
 
     libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
-    // Use that decoded frame to set up the frame buffer properties
+        // Use that decoded frame to set up the frame buffer properties
         //frame_buf->buildFrameBuffer(largest_diff,frame);
     });
 
@@ -183,19 +182,19 @@ void VideoDecoder::createMedia(const std::string& filename) {
 
 }
 
-template <typename T>
-int find_buffer_size(std::vector<T>& vec) {
+template<typename T>
+int find_buffer_size(std::vector<T> &vec) {
 
     int largest_diff = vec[1] - vec[0];
     for (int i = 2; i < vec.size(); i++) {
-        if (vec[i] - vec[i-1] > largest_diff) {
-            largest_diff = vec[i] - vec[i-1];
+        if (vec[i] - vec[i - 1] > largest_diff) {
+            largest_diff = vec[i] - vec[i - 1];
         }
     }
     return largest_diff;
 }
 
-std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrameByFrameMode)
+std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFrameByFrameMode)
 /*!
  *
  * Future improvements could return different output types (such as 16-bit uints)
@@ -206,7 +205,8 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
  * @return Image corresponding to the decoded desired_frame
  */
 {
-    std::vector<uint8_t> output(_height * _width); //The height and width of the video do not change, so we should initialize this and re-use it.
+    std::vector<uint8_t> output(_height *
+                                _width); //The height and width of the video do not change, so we should initialize this and re-use it.
 
     //First we can check the pts value of the pkt we currently have stored and compare it to the PTS of the frame we wish to seek to
     const int64_t desired_frame_pts = _pts[desired_frame];
@@ -234,7 +234,9 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
     } else if (desired_frame < current_pkt_frame) {
 
         if (_verbose) {
-            std::cout << "The desired frame " << desired_frame << " is before where we currently are in the video, but we don't have it in the buffer. We need to seek" << std::endl;
+            std::cout << "The desired frame " << desired_frame
+                      << " is before where we currently are in the video, but we don't have it in the buffer. We need to seek"
+                      << std::endl;
         }
         if (desired_frame == desired_nearest_iframe) {
             if (_verbose) {
@@ -248,10 +250,12 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
     } else if (desired_nearest_iframe > current_pkt_frame) {
 
         if (_verbose) {
-            std::cout << "The nearest iframe is greater than our current frame, so we should seek there instead of decoding forward" << std::endl;
+            std::cout
+                    << "The nearest iframe is greater than our current frame, so we should seek there instead of decoding forward"
+                    << std::endl;
         }
         if (desired_frame == desired_nearest_iframe) {
-             // I think that this doesn't work well if the desired frame is also a keyframe
+            // I think that this doesn't work well if the desired frame is also a keyframe
             if (_verbose) {
                 std::cout << "The desired frame is a keyframe" << std::endl;
             }
@@ -269,7 +273,8 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
     } else {
 
         if (_verbose) {
-            std::cout << "The desired frame is " << desired_frame - current_pkt_frame << " frame ahead. We should seek forward from where we are" << std::endl;
+            std::cout << "The desired frame is " << desired_frame - current_pkt_frame
+                      << " frame ahead. We should seek forward from where we are" << std::endl;
         }
         ++(_pkt);
     }
@@ -280,8 +285,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    while (!is_frame_to_display)
-    {
+    while (!is_frame_to_display) {
         //this_pkt_pts = pkt.get()->pts;
         current_pkt_frame = _findFrameByPts(_pkt.get()->pts);
         is_packet_decoded = false;
@@ -289,28 +293,28 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
 
         auto err = libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
 
-                // We have the packet we want, so we should convert to grayscale to be displayed
-                //frame_buf->addFrametoBuffer(frame, this_pkt_frame);
-                is_packet_decoded = true;
-                frame_pts = frame.get()->pts;
-                //frame_pts = frame.get()->best_effort_timestamp;
-                if (frame_pts == desired_frame_pts) {
-                    if (_verbose) {
-                        std::cout << "frame pts matches desired frame" << std::endl;
-                    }
-                    is_frame_to_display = true;
-                    _yuv420togray8(frame, output);
-                }
+            // We have the packet we want, so we should convert to grayscale to be displayed
+            //frame_buf->addFrametoBuffer(frame, this_pkt_frame);
+            is_packet_decoded = true;
+            frame_pts = frame.get()->pts;
+            //frame_pts = frame.get()->best_effort_timestamp;
+            if (frame_pts == desired_frame_pts) {
                 if (_verbose) {
-                    std::cout << "Timestamp: " << frame_pts << std::endl;
-                    std::cout << "Frame pts: " << frame.get()->pts << std::endl;
+                    std::cout << "frame pts matches desired frame" << std::endl;
                 }
+                is_frame_to_display = true;
+                _yuv420togray8(frame, output);
+            }
+            if (_verbose) {
+                std::cout << "Timestamp: " << frame_pts << std::endl;
+                std::cout << "Frame pts: " << frame.get()->pts << std::endl;
+            }
 
-            });
-        if ((!is_packet_decoded) | (!is_frame_to_display) ) {
+        });
+        if ((!is_packet_decoded) | (!is_frame_to_display)) {
             ++(_pkt);
         }
-        frames_decoded ++;
+        frames_decoded++;
     }
 
     if (_verbose) {
@@ -322,7 +326,8 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
     std::chrono::duration<double> elapsed1 = t2 - t1;
 
     if (_verbose) {
-        std::cout << "Time for decoding was : " << elapsed1.count() << " for " << frames_decoded << " frames." << std::endl;
+        std::cout << "Time for decoding was : " << elapsed1.count() << " for " << frames_decoded << " frames."
+                  << std::endl;
     }
     // 2/22/23 - Time results show decoding takes ~3ms a frame, which adds up if there are 100-200 frames to decode.
 
@@ -330,11 +335,10 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame,bool isFrame
     return output;
 }
 
-void VideoDecoder::_yuv420togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t>& output)
-{
+void VideoDecoder::_yuv420togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
-    memcpy(output.data(),frame2->data[0], _height * _width);
+    memcpy(output.data(), frame2->data[0], _height * _width);
     auto t2 = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = t2 - t1;
@@ -371,16 +375,19 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
     _pkt.reset(); // Does this flush buffers?
 
     libav::flicks time = libav::av_rescale(frame,
-                {_media->streams[0]->r_frame_rate.den, _media->streams[0]->r_frame_rate.num});
+                                           {_media->streams[0]->r_frame_rate.den,
+                                            _media->streams[0]->r_frame_rate.num});
 
     if (keyframe) {
-        libav::flicks adjust = libav::av_rescale(_media->streams[0]->start_time, {_media->streams[0]->time_base.num , _media->streams[0]->time_base.den});
+        libav::flicks adjust = libav::av_rescale(_media->streams[0]->start_time, {_media->streams[0]->time_base.num,
+                                                                                  _media->streams[0]->time_base.den});
         libav::flicks time2 = time + adjust;
         //libav::flicks time2 = time;
         //libav::av_seek_frame(media,time2,-1,AVSEEK_FLAG_ANY);
         libav::av_seek_frame(_media, time2, -1, AVSEEK_FLAG_BACKWARD);
 
-        _pkt = std::move(_media.begin()); // After we seek to a frame, this will read frame, followed by rescaling to appropriate time scale.
+        _pkt = std::move(
+                _media.begin()); // After we seek to a frame, this will read frame, followed by rescaling to appropriate time scale.
 
         if (_verbose) {
             if (_pkt.get()->flags & AV_PKT_FLAG_KEY) {
@@ -412,17 +419,23 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
 }
 
 /*
-Frames in a video file have unique PTS values that roughly correspond to time stamps
-When we first read the video file, we keep a vector of all PTS values
-in the pts member variable. So if we have a pts value, we can find the frame ID
-By searching the dictionary
 
-
-Note, this the pts vector should be in increasing order, so a more efficient search method 
-could be used here
 */
-int64_t VideoDecoder::_findFrameByPts(uint64_t pts) {
-
+int64_t VideoDecoder::_findFrameByPts(uint64_t pts)
+/**
+ *
+ * Frames in a video file have unique PTS values that roughly correspond to time stamps
+ * When we first read the video file, we keep a vector of all PTS values
+ * in the pts member variable. So if we have a pts value, we can find the frame ID
+ * By searching the dictionary
+ *
+ * Note, this the pts vector should be in increasing order, so a more efficient search method
+ * could be used here
+ *
+ * @param pts
+ * @return frame with matching pts input value
+ */
+{
     int64_t matching_frame = 0;
 
     for (int i = 0; i < _pts.size(); i++) {
