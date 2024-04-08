@@ -1,5 +1,14 @@
+# Preamble
 cmake_minimum_required(VERSION 3.24)
 project(ffmpeg_wrapper VERSION 0.1.0)
+#[[
+The CTest module helps with several testing functions.
+It defines the BUILD_TESTING cache variable that defaults to true, and also automatically calls enable_testing(), so this does not need to be called manually
+CTest should be included early in the top level CMakeLists.txt file
+Professional CMake 25.10.3
+]]
+include(CTest)
+
 
 #[[
 Best practice for looking for cmake modules cmake folder in root of the project
@@ -42,14 +51,6 @@ set(Headers
     headers/ffmpeg_wrapper/videodecoder.h
     headers/ffmpeg_wrapper/videoencoder.h
 )
-
-#[[
-The CTest module helps with several testing functions.
-It defines the BUILD_TESTING cache variable that defaults to true, and also automatically calls enable_testing(), so this does not need to be called manually
-CTest should be included early in the top level CMakeLists.txt file
-Professional CMake 25.10.3
-]]
-include(CTest)
 
 if (WIN32)
         if (MSVC)
