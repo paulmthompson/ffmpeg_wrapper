@@ -568,6 +568,7 @@ inline int avcodec_send_packet(AVFormatContext& fmtCtx,
     return avcodec_send_packet(fmtCtx, pkt, onFrame);
 }
 ///////////////////////////////////////////////////////////////////////////////
+/*
 using AVFilterGraphBase = std::unique_ptr<::AVFilterGraph, void (*)(::AVFilterGraph*)>;
 class AVFilterGraph : public AVFilterGraphBase {
 public:
@@ -636,7 +637,7 @@ public:
         err = ::avfilter_graph_config(get(), nullptr);
     }
 };
-
+*/
 /*
 inline int avfilter_graph_write_frame(AVFilterGraph& graph, AVFrame& frame, std::function<void(AVFrame&)> onFrame)
 {
@@ -745,7 +746,7 @@ inline void DLLOPT open_encode_stream_to_write(AVFormatContext& media,std::strin
 {
     ::avio_open(&media->pb, file_name.c_str(), AVIO_FLAG_WRITE);
 
-    ::avformat_write_header(media.get(), NULL);
+    auto success = ::avformat_write_header(media.get(), NULL);
 }
 
 inline void DLLOPT bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int height, ::AVPixelFormat sw_pix_fmt)

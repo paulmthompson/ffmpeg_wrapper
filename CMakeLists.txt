@@ -29,6 +29,8 @@ with this particular project
 ]]
 set(VCPKG_MANIFEST_MODE ON)
 
+#set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+
 #=============================
 # Externally Provided Content
 #=============================
