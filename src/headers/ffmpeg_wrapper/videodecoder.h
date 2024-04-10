@@ -60,7 +60,8 @@ public:
 
     enum OutputFormat
     {
-        Gray8
+        Gray8,
+        ARGB,
     };
 
 private:

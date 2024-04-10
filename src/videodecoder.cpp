@@ -344,6 +344,9 @@ void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame
         case OutputFormat::Gray8:
             _togray8(frame, output);
             break;
+        case OutputFormat::ARGB:
+            _torgb32(frame,output);
+            break;
         default:
             std::cout << "Output not supported" << std::endl;
     }
@@ -355,6 +358,8 @@ int VideoDecoder::_getFormatBytes()
     switch (_format) {
         case OutputFormat::Gray8:
             return 1;
+        case OutputFormat::ARGB:
+            return 4;
         default:
             return 1;
     }
