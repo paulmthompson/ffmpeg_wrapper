@@ -208,7 +208,8 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
  */
 {
     std::vector<uint8_t> output(_height *
-                                _width); //The height and width of the video do not change, so we should initialize this and re-use it.
+                                _width *
+                                _getFormatBytes()); //The height and width of the video do not change, so we should initialize this and re-use it.
 
     //First we can check the pts value of the pkt we currently have stored and compare it to the PTS of the frame we wish to seek to
     const int64_t desired_frame_pts = _pts[desired_frame];
@@ -229,7 +230,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
             std::cout << "Desired frame is " << desired_frame << " and it is already in the buffer" << std::endl;
         }
         auto frame = _frame_buf->getFrameFromBuffer(desired_frame);
-        _yuv420togray8(frame, output); // Convert the frame to gray format to render
+        _convertFrameToOutputFormat(frame, output); // Convert the frame to format to render
 
         return output;
 
@@ -305,7 +306,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
                     std::cout << "frame pts matches desired frame" << std::endl;
                 }
                 is_frame_to_display = true;
-                _yuv420togray8(frame, output);
+                _convertFrameToOutputFormat(frame, output);
             }
             if (_verbose) {
                 std::cout << "Timestamp: " << frame_pts << std::endl;
@@ -337,9 +338,45 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     return output;
 }
 
-void VideoDecoder::_yuv420togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
+void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t> output)
+{
+    switch (_format) {
+        case OutputFormat::Gray8:
+            _togray8(frame, output);
+            break;
+        default:
+            std::cout << "Output not supported" << std::endl;
+    }
+}
+
+int VideoDecoder::_getFormatBytes()
+{
+
+    switch (_format) {
+        case OutputFormat::Gray8:
+            return 1;
+        default:
+            return 1;
+    }
+}
+
+void VideoDecoder::_togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
+    memcpy(output.data(), frame2->data[0], _height * _width);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed = t2 - t1;
+
+    if (_verbose) {
+        std::cout << "Time for conversion was : " << elapsed.count() << std::endl;
+    }
+}
+
+void VideoDecoder::_torgb32(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_ARGB);
     memcpy(output.data(), frame2->data[0], _height * _width);
     auto t2 = std::chrono::high_resolution_clock::now();
 

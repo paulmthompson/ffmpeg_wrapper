@@ -73,6 +73,7 @@ inline int64_t av_rescale(flicks time, ::AVRational scale)
 using ::AV_PIX_FMT_GRAY8;
 using ::AV_PIX_FMT_NV12;
 using ::AV_PIX_FMT_RGB0;
+using ::AV_PIX_FMT_ARGB;
 
 ///////////////////////////////////////////////////////////////////////////////
 using AVDictionary = std::multimap<std::string, std::string>;

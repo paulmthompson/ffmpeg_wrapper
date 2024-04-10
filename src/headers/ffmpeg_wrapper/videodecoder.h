@@ -74,8 +74,12 @@ private:
     int _height;
     int _fps_num;
     int _fps_denom;
+
     OutputFormat _format;
-    void _yuv420togray8(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
+    void _convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t> output);
+    int _getFormatBytes();
+    void _togray8(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
+    void _torgb32(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output);
 
     bool _verbose;
 
