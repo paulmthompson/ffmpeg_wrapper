@@ -29,12 +29,14 @@ public:
         _verbose = verbose;
     }
 
+
 private:
     std::vector<libav::AVFrame> _frame_buf;
     std::vector<int64_t> _frame_buf_id;
     int _keyframe; // The first index of each buffer is a keyframe from which we have decoded forward
     bool _enable;
     bool _verbose;
+
 };
 
 class DLLOPT VideoDecoder {
@@ -56,6 +58,11 @@ public:
         _frame_buf->setVerbose(verbose);
     }
 
+    enum OutputFormat
+    {
+        Gray8
+    };
+
 private:
     libav::AVFormatContext _media; //This is a unique_ptr
     libav::AVPacket _pkt; //This is a unique ptr
@@ -67,6 +74,7 @@ private:
     int _height;
     int _fps_num;
     int _fps_denom;
+    OutputFormat _format;
     void _yuv420togray8(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
 
     bool _verbose;

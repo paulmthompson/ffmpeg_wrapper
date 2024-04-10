@@ -75,6 +75,8 @@ VideoDecoder::VideoDecoder() {
     _pts.reserve(500000);
     _last_packet_decoded = false;
 
+    _format = OutputFormat::Gray8;
+
     _verbose = false;
 
     _frame_buf = std::make_unique<FrameBuffer>();
