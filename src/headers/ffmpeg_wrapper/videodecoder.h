@@ -58,11 +58,16 @@ public:
         _frame_buf->setVerbose(verbose);
     }
 
+
     enum OutputFormat
     {
         Gray8,
         ARGB,
     };
+
+    void setFormat(OutputFormat format) {
+        _format = format;
+    }
 
 private:
     libav::AVFormatContext _media; //This is a unique_ptr
