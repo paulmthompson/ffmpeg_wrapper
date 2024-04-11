@@ -338,7 +338,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     return output;
 }
 
-void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t> output)
+void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output)
 {
     switch (_format) {
         case OutputFormat::Gray8:
@@ -368,7 +368,7 @@ int VideoDecoder::_getFormatBytes()
 void VideoDecoder::_togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
-    memcpy(output.data(), frame2->data[0], _height * _width);
+    memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
     auto t2 = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = t2 - t1;
@@ -382,7 +382,7 @@ void VideoDecoder::_torgb32(std::shared_ptr<::AVFrame> &frame, std::vector<uint8
 
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_ARGB);
-    memcpy(output.data(), frame2->data[0], _height * _width);
+    memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
     auto t2 = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = t2 - t1;
