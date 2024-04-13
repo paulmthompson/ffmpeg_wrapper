@@ -45,12 +45,30 @@ public:
     VideoDecoder();
     VideoDecoder(const std::string& filename);
     void createMedia(const std::string& filename);
+
+    /*!
+    *
+    * Future improvements could return different output types (such as 16-bit uints)
+    *
+    * @param desired_frame Frame we wish to seek to
+    * @param isFrameByFrameMode We wish to see to the desired frame by decoding each frame in between
+    * rather than seeking to the next keyframe.
+    * @return Image corresponding to the decoded desired_frame
+    */
     std::vector<uint8_t> getFrame(const int frame_id, bool isFrameByFrameMode = false);
 
     int getFrameCount() const {return _frame_count;}
     int getWidth() const {return _width;}
     int getHeight() const {return _height;}
     std::vector<int64_t> getKeyFrames() const {return _i_frames;}
+
+    /**
+     *
+     * Find the nearest keyframe to frame_id
+     *
+     * @param frame_id
+     * @return
+     */
     int64_t nearest_iframe(int64_t frame_id);
 
     void setVerbose(bool verbose) {

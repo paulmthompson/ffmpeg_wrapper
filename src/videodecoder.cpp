@@ -197,15 +197,6 @@ int find_buffer_size(std::vector<T> &vec) {
 }
 
 std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFrameByFrameMode)
-/*!
- *
- * Future improvements could return different output types (such as 16-bit uints)
- *
- * @param desired_frame Frame we wish to seek to
- * @param isFrameByFrameMode We wish to see to the desired frame by decoding each frame in between
- * rather than seeking to the next keyframe.
- * @return Image corresponding to the decoded desired_frame
- */
 {
     std::vector<uint8_t> output(_height *
                                 _width *
@@ -354,7 +345,6 @@ void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame
 
 int VideoDecoder::_getFormatBytes()
 {
-
     switch (_format) {
         case OutputFormat::Gray8:
             return 1;
@@ -462,10 +452,6 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
     // 2/22/23 - Time results suggest that frame seeking takes less than 1 ms
 }
 
-/*
-
-*/
-int64_t VideoDecoder::_findFrameByPts(uint64_t pts)
 /**
  *
  * Frames in a video file have unique PTS values that roughly correspond to time stamps
@@ -479,6 +465,8 @@ int64_t VideoDecoder::_findFrameByPts(uint64_t pts)
  * @param pts
  * @return frame with matching pts input value
  */
+int64_t VideoDecoder::_findFrameByPts(uint64_t pts)
+
 {
     int64_t matching_frame = 0;
 
