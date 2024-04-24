@@ -171,14 +171,24 @@
         "inherits": ["windows-base","clang-release-base"],
         "cacheVariables": {
           "VCPKG_TARGET_TRIPLET": "x64-windows"
-      }
+        },
+        "vendor": {
+          "jetbrains.com/clion": {
+            "toolchain": "MSYS_MinGW"
+          }
+        }
       },
       {
         "name": "windows-clang-debug",
         "inherits": ["windows-base","clang-debug-base"],
         "cacheVariables": {
           "VCPKG_TARGET_TRIPLET": "x64-windows"
-      }
+        },
+        "vendor": {
+          "jetbrains.com/clion": {
+            "toolchain": "MSYS_MinGW"
+          }
+        }
       },
 
       {
