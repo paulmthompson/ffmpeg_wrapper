@@ -17,9 +17,12 @@ FrameBuffer::FrameBuffer() {
     _verbose = false;
 };
 
-void FrameBuffer::buildFrameBuffer(int buf_size, libav::AVFrame frame) {
+void FrameBuffer::buildFrameBuffer(int buf_size) {
 
     _frame_buf.clear();
+    _frame_buf = std::vector<libav::AVFrame>(buf_size);
+
+    /*
     for (int i = 0; i < buf_size; i++) {
         _frame_buf.push_back(libav::av_frame_alloc());
         _frame_buf[i]->format = frame->format;
@@ -33,9 +36,10 @@ void FrameBuffer::buildFrameBuffer(int buf_size, libav::AVFrame frame) {
 
     _frame_buf_id.resize(buf_size);
     std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
+     */
 }
 
-void FrameBuffer::addFrametoBuffer(libav::AVFrame &frame, int pos) {
+void FrameBuffer::addFrametoBuffer(libav::AVFrame frame, int pos) {
 
     if (_enable) {
         //Check if the position is already in the buffer
@@ -50,7 +54,8 @@ void FrameBuffer::addFrametoBuffer(libav::AVFrame &frame, int pos) {
                     std::cout << "Error, buffer index equal to " << pos - _keyframe << std::endl;
                 }
             } else {
-                libav::av_frame_copy(_frame_buf[pos - _keyframe], frame);
+                _frame_buf[pos - _keyframe] = frame;
+                //libav::av_frame_copy(_frame_buf[pos - _keyframe], frame);
                 _frame_buf_id[pos - _keyframe] = pos;
             }
         }
@@ -178,6 +183,8 @@ void VideoDecoder::createMedia(const std::string &filename) {
         //frame_buf->buildFrameBuffer(largest_diff,frame);
     });
 
+    _frame_buf->buildFrameBuffer(largest_diff);
+
     if (_verbose) {
         std::cout << "Buffer size set to " << largest_diff << std::endl;
     }
@@ -221,7 +228,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
             std::cout << "Desired frame is " << desired_frame << " and it is already in the buffer" << std::endl;
         }
         auto frame = _frame_buf->getFrameFromBuffer(desired_frame);
-        _convertFrameToOutputFormat(frame, output); // Convert the frame to format to render
+        _convertFrameToOutputFormat(frame.get(), output); // Convert the frame to format to render
 
         return output;
 
@@ -288,7 +295,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
         auto err = libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
 
             // We have the packet we want, so we should convert to grayscale to be displayed
-            //frame_buf->addFrametoBuffer(frame, this_pkt_frame);
+            _frame_buf->addFrametoBuffer(frame, current_pkt_frame);
             is_packet_decoded = true;
             frame_pts = frame.get()->pts;
             //frame_pts = frame.get()->best_effort_timestamp;
@@ -297,7 +304,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
                     std::cout << "frame pts matches desired frame" << std::endl;
                 }
                 is_frame_to_display = true;
-                _convertFrameToOutputFormat(frame, output);
+                _convertFrameToOutputFormat(frame.get(), output);
             }
             if (_verbose) {
                 std::cout << "Timestamp: " << frame_pts << std::endl;
@@ -329,14 +336,14 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     return output;
 }
 
-void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output)
+void VideoDecoder::_convertFrameToOutputFormat(::AVFrame* frame, std::vector<uint8_t>& output)
 {
     switch (_format) {
         case OutputFormat::Gray8:
-            _togray8(frame.get(), output);
+            _togray8(frame, output);
             break;
         case OutputFormat::ARGB:
-            _torgb32(frame.get(),output);
+            _torgb32(frame,output);
             break;
         default:
             std::cout << "Output not supported" << std::endl;

@@ -16,12 +16,12 @@ namespace ffmpeg_wrapper {
 class FrameBuffer {
 public:
     FrameBuffer();
-    void buildFrameBuffer(int buf_size, libav::AVFrame frame);
+    void buildFrameBuffer(int buf_size);
     void resetKeyFrame(const int frame) {
         _keyframe = frame;
         std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
         }
-    void addFrametoBuffer(libav::AVFrame& frame, int pos);
+    void addFrametoBuffer(libav::AVFrame frame, int pos);
     bool isFrameInBuffer(int frame);
     libav::AVFrame getFrameFromBuffer(int frame);
 
@@ -100,7 +100,7 @@ private:
     int _fps_denom;
 
     OutputFormat _format;
-    void _convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
+    void _convertFrameToOutputFormat(::AVFrame* frame, std::vector<uint8_t>& output);
     int _getFormatBytes();
     void _togray8(::AVFrame* frame, std::vector<uint8_t>& output);
     void _torgb32(::AVFrame* frame, std::vector<uint8_t> &output);
