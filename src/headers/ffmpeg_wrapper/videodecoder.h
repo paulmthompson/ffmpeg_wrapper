@@ -102,8 +102,8 @@ private:
     OutputFormat _format;
     void _convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
     int _getFormatBytes();
-    void _togray8(std::shared_ptr<::AVFrame>& frame, std::vector<uint8_t>& output);
-    void _torgb32(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output);
+    void _togray8(::AVFrame* frame, std::vector<uint8_t>& output);
+    void _torgb32(::AVFrame* frame, std::vector<uint8_t> &output);
 
     bool _verbose;
 

@@ -333,10 +333,10 @@ void VideoDecoder::_convertFrameToOutputFormat(std::shared_ptr<::AVFrame>& frame
 {
     switch (_format) {
         case OutputFormat::Gray8:
-            _togray8(frame, output);
+            _togray8(frame.get(), output);
             break;
         case OutputFormat::ARGB:
-            _torgb32(frame,output);
+            _torgb32(frame.get(),output);
             break;
         default:
             std::cout << "Output not supported" << std::endl;
@@ -355,9 +355,9 @@ int VideoDecoder::_getFormatBytes()
     }
 }
 
-void VideoDecoder::_togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
+void VideoDecoder::_togray8(::AVFrame* frame, std::vector<uint8_t> &output) {
     auto t1 = std::chrono::high_resolution_clock::now();
-    auto frame2 = libav::convert_frame(frame.get(), _width, _height, AV_PIX_FMT_GRAY8);
+    auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
     memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
     auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -368,10 +368,10 @@ void VideoDecoder::_togray8(std::shared_ptr<::AVFrame> &frame, std::vector<uint8
     }
 }
 
-void VideoDecoder::_torgb32(std::shared_ptr<::AVFrame> &frame, std::vector<uint8_t> &output) {
+void VideoDecoder::_torgb32(::AVFrame* frame, std::vector<uint8_t> &output) {
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    auto frame2 = libav::convert_frame(frame.get(), _width, _height, AV_PIX_FMT_RGBA);
+    auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_RGBA);
     memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
     auto t2 = std::chrono::high_resolution_clock::now();
 
