@@ -13,7 +13,7 @@
 namespace ffmpeg_wrapper {
 
 FrameBuffer::FrameBuffer() {
-    _enable = false;
+    _enable = true;
     _verbose = false;
 };
 
