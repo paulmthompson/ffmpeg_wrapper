@@ -430,10 +430,19 @@ inline int av_frame_get_buffer(const AVFrame& frame) {
     return ::av_frame_get_buffer(frame.get(),32);
 }
 
-inline AVFrame convert_frame(AVFrame& frame, int width_out, int height_out, ::AVPixelFormat pix_out)
+inline AVFrame convert_frame(::AVFrame* frame, int width_out, int height_out, ::AVPixelFormat pix_out)
 {
-    ::SwsContext * pContext = ::sws_getContext(frame->width, frame->height, (::AVPixelFormat)frame->format,
-                                          width_out, height_out, pix_out, (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR), nullptr, nullptr, nullptr);
+    ::SwsContext * pContext = ::sws_getContext(
+            frame->width,
+            frame->height,
+            (::AVPixelFormat)frame->format,
+            width_out,
+            height_out,
+            pix_out,
+            (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR),
+            nullptr,
+            nullptr,
+            nullptr);
 
     AVFrame frame2 = av_frame_alloc();
     frame2->format = pix_out;
@@ -441,7 +450,14 @@ inline AVFrame convert_frame(AVFrame& frame, int width_out, int height_out, ::AV
     frame2->height = height_out;
     ::av_frame_get_buffer(frame2.get(),32);
 
-    sws_scale(pContext, frame->data, frame->linesize, 0, frame->height, frame2->data, frame2->linesize);
+    sws_scale(
+            pContext,
+            frame->data,
+            frame->linesize,
+            0,
+            frame->height,
+            frame2->data,
+            frame2->linesize);
 
     sws_freeContext(pContext);
 
