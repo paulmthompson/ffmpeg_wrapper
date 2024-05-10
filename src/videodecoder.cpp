@@ -33,10 +33,11 @@ void FrameBuffer::buildFrameBuffer(int buf_size) {
         _frame_buf[i]->nb_samples = frame->nb_samples;
         libav::av_frame_get_buffer(_frame_buf[i]);
     }
+    */
 
     _frame_buf_id.resize(buf_size);
     std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
-     */
+
 }
 
 void FrameBuffer::addFrametoBuffer(libav::AVFrame frame, int pos) {
