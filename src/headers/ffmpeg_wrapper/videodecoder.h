@@ -23,10 +23,6 @@ class FrameBuffer {
 public:
     FrameBuffer();
     void buildFrameBuffer(int buf_size);
-    void resetKeyFrame(const int frame) {
-        _keyframe = frame;
-        std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
-        }
     void addFrametoBuffer(libav::AVFrame frame, int pos);
     bool isFrameInBuffer(int frame);
     libav::AVFrame getFrameFromBuffer(int frame);
@@ -37,9 +33,7 @@ public:
 
 
 private:
-    std::vector<libav::AVFrame> _frame_buf;
-    std::vector<int64_t> _frame_buf_id;
-    int _keyframe; // The first index of each buffer is a keyframe from which we have decoded forward
+    boost::circular_buffer<FrameBufferElement> _frame_buf;
     bool _enable;
     bool _verbose;
 

@@ -20,24 +20,7 @@ FrameBuffer::FrameBuffer() {
 void FrameBuffer::buildFrameBuffer(int buf_size) {
 
     _frame_buf.clear();
-    _frame_buf = std::vector<libav::AVFrame>(buf_size);
-
-    /*
-    for (int i = 0; i < buf_size; i++) {
-        _frame_buf.push_back(libav::av_frame_alloc());
-        _frame_buf[i]->format = frame->format;
-        _frame_buf[i]->width = frame->width;
-        _frame_buf[i]->height = frame->height;
-        _frame_buf[i]->channels = frame->channels;
-        _frame_buf[i]->channel_layout = frame->channel_layout;
-        _frame_buf[i]->nb_samples = frame->nb_samples;
-        libav::av_frame_get_buffer(_frame_buf[i]);
-    }
-    */
-
-    _frame_buf_id.resize(buf_size);
-    std::fill(_frame_buf_id.begin(), _frame_buf_id.end(), -1);
-
+    _frame_buf = boost::circular_buffer<FrameBufferElement>(buf_size);
 }
 
 void FrameBuffer::addFrametoBuffer(libav::AVFrame frame, int pos) {
@@ -49,28 +32,30 @@ void FrameBuffer::addFrametoBuffer(libav::AVFrame frame, int pos) {
                 std::cout << "Frame " << pos << " is already in the buffer" << std::endl;
             }
         } else {
-
-            if (pos - _keyframe > _frame_buf.size() - 1) {
-                if (_verbose) {
-                    std::cout << "Error, buffer index equal to " << pos - _keyframe << std::endl;
-                }
-            } else {
-                _frame_buf[pos - _keyframe] = frame;
-                //libav::av_frame_copy(_frame_buf[pos - _keyframe], frame);
-                _frame_buf_id[pos - _keyframe] = pos;
-            }
+            _frame_buf.push_back(FrameBufferElement{pos, frame});
         }
     }
 }
 
 bool FrameBuffer::isFrameInBuffer(int frame) {
-    return std::find(_frame_buf_id.begin(), _frame_buf_id.end(), frame) != _frame_buf_id.end();
+    auto element = std::find_if(
+            _frame_buf.begin(), _frame_buf.end(),
+            [&frame](const FrameBufferElement& x){return x.frame_id == frame;}
+    );
+    if (element == _frame_buf.end()) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 libav::AVFrame FrameBuffer::getFrameFromBuffer(int frame) {
-    auto buf_pos = std::distance(_frame_buf_id.begin(), std::find(_frame_buf_id.begin(), _frame_buf_id.end(), frame));
+    auto element = std::find_if(
+            _frame_buf.begin(), _frame_buf.end(),
+            [&frame](const FrameBufferElement& x){return x.frame_id == frame;}
+    );
 
-    return _frame_buf[buf_pos];
+    return (*element).frame;
 }
 
 VideoDecoder::VideoDecoder() {
@@ -446,7 +431,6 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
     }
 
     _last_key_frame = _findFrameByPts(_pkt.get()->pts);
-    _frame_buf->resetKeyFrame(_last_key_frame);
 
     if (_verbose) {
         std::cout << "Seeked to frame " << _last_key_frame << std::endl;
