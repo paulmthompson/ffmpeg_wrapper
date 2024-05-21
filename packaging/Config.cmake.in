@@ -20,3 +20,7 @@ if (NOT TARGET PkgConfig::FFMPEG)
     INTERFACE_LINK_LIBRARIES "PkgConfig::FFMPEG")
     
 endif()
+
+if (NOT TARGET Boost)
+    find_package(Boost)
+endif()

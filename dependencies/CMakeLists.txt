@@ -7,3 +7,5 @@ While libraries consuming ffmpeg_wrapper will not use libavinc directly, ffmpeg_
 libavinc needs to be installed as a target as well, and the dependancy should be declared PUBLIC.
 ]]
 add_subdirectory(libavinc)
+
+add_subdirectory(boost)

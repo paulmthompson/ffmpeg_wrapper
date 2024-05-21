@@ -7,7 +7,7 @@ Professional CMake 26.2
 
 Note that libavinc must also be installed as a target since it is a PUBLIC dependancy of ffmpeg_wrapper
 ]]
-install(TARGETS ffmpeg_wrapper libavinc
+install(TARGETS ffmpeg_wrapper libavinc libboost
         EXPORT ffmpeg_wrapperTargets
         LIBRARY
         DESTINATION ${CMAKE_INSTALL_LIBDIR}

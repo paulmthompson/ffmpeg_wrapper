@@ -8,6 +8,9 @@
             "features": ["nvcodec"],
             "$version>=": "6.1.1",
             "$comment": "version 4.4.3 commited on november 14, 2022"
+        },
+        {
+            "name": "boost-circular-buffer"
         }
     ],
     "$builtin-baseline": "acc3bcf76b84ae5041c86ab55fe138ae7b8255c7",

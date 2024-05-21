@@ -22,6 +22,7 @@ add_library(ffmpeg_wrapper SHARED ${Sources} ${Headers})
 add_library(ffmpeg_wrapper::ffmpeg_wrapper ALIAS ffmpeg_wrapper)
 
 target_link_libraries(ffmpeg_wrapper PUBLIC libavinc)
+target_link_libraries(ffmpeg_wrapper PUBLIC libboost)
 
 #[[
 Here I link the include directories for ffmpeg_wrapper.
