@@ -178,14 +178,15 @@ inline int DLLOPT av_read_frame(::AVFormatContext* ctx, ::AVPacket* pkt)
 using AVPacketBase = std::unique_ptr<::AVPacket, void (*)(::AVPacket*)>;
 class DLLOPT AVPacket : public AVPacketBase {
 private:
-    ::AVFormatContext* fmtCtx = nullptr;
+    ::AVFormatContext* _fmtCtx = nullptr;
+
     // From Video
     void av_read_frame()
     {
         if (*this) {
-            auto err = ::av_read_frame(fmtCtx, get());
+            auto err = ::av_read_frame(_fmtCtx, get());
             if (0 <= err) {
-                auto& track = fmtCtx->streams[get()->stream_index];
+                auto& track = _fmtCtx->streams[get()->stream_index];
                 ::av_packet_rescale_ts(get(), track->time_base, FLICKS_TIMESCALE_Q);
             } else {
                 reset();
@@ -196,14 +197,14 @@ private:
 public:
     AVPacket()
         : AVPacketBase(nullptr, [](::AVPacket*) {})
-        , fmtCtx(nullptr)
+        , _fmtCtx(nullptr)
     {
     }
 
     AVPacket(::AVFormatContext* fmtCtx)
     //    : AVPacketBase(::av_packet_alloc(), [](::AVPacket* p) { ::av_packet_free(&p); }) Original Code
         : AVPacketBase(::av_packet_alloc(), [](::AVPacket* pkt) {auto p = &pkt; ::av_packet_free(p); }) // From Video
-        , fmtCtx(fmtCtx)
+        , _fmtCtx(fmtCtx)
     {
         libav::av_read_frame(fmtCtx, get());
     }
@@ -217,7 +218,7 @@ public:
         if (0 >= get()->size) {
             reset();
         } else {
-            libav::av_read_frame(fmtCtx, get());
+            libav::av_read_frame(_fmtCtx, get());
         }
 
         return *this;
