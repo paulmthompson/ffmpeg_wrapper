@@ -33,6 +33,8 @@ add_test(
 if (WIN32)
     set(ffmpeg_wrapper_dir "$<SHELL_PATH:$<TARGET_FILE_DIR:ffmpeg_wrapper>>")
 
+    message(STATUS ${ffmpeg_wrapper_dir})
+
     set_property(TEST ffmpeg_wrapper_test_suite APPEND PROPERTY
             ENVIRONMENT_MODIFICATION
                 PATH=path_list_prepend:${ffmpeg_wrapper_dir}

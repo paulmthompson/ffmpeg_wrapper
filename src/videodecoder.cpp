@@ -13,8 +13,7 @@
 namespace ffmpeg_wrapper {
 
 FrameBuffer::FrameBuffer() {
-    _enable = true;
-    _verbose = false;
+
 };
 
 void FrameBuffer::buildFrameBuffer(int buf_size) {
@@ -60,15 +59,7 @@ libav::AVFrame FrameBuffer::getFrameFromBuffer(int frame) {
 
 VideoDecoder::VideoDecoder() {
 
-    _frame_count = 0;
-    _last_decoded_frame = 0;
-    _last_key_frame = 0;
     _pts.reserve(500000);
-    _last_packet_decoded = false;
-
-    _format = OutputFormat::Gray8;
-
-    _verbose = false;
 
     _frame_buf = std::make_unique<FrameBuffer>();
 }
