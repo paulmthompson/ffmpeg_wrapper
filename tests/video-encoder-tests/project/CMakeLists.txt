@@ -28,6 +28,8 @@ add_test(
   COMMAND $<TARGET_FILE:ffmpeg_wrapper_test_suite>
   )
 
+set_tests_properties(ffmpeg_wrapper_test_suite PROPERTIES LABELS GPU_TEST)
+
 #On windows, I can't seem to find the top level path with the ffmpeg_wrapper.dll
 #This was in Testing section of Craig Scott's Professional CMake book
 if (WIN32)
