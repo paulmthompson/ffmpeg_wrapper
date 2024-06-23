@@ -5,9 +5,12 @@
         {
             "name": "ffmpeg",
             "default-features": true,
-            "features": ["nvcodec"],
-            "$version>=": "6.1.1",
-            "$comment": "version 4.4.3 commited on november 14, 2022"
+            "features": [
+                {
+                    "name": "nvcodec",
+                    "platform": "!osx"
+                }
+            ]
         },
         {
             "name": "boost-circular-buffer"
