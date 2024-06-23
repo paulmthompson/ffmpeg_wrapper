@@ -28,11 +28,6 @@ Manifest mode from VCPKG will make all dependancies specified in vcpkg.json be a
 with this particular project
 ]]
 
-if(APPLE)
-  message(STATUS "enabling unsupported install for mac to use nvcodec")
-  set(VCPKG_INSTALL_OPTIONS "--allow-unsupported")
-endif()
-
 set(VCPKG_MANIFEST_MODE ON)
 
 #set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
