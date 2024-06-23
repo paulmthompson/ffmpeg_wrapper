@@ -35,6 +35,8 @@ jobs:
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       if: runner.os == 'macOS'
+      with:
+        vcpkgGitCommitId: 'f7423ee180c4b7f40d43402c2feb3859161ef625'
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows' && matrix.compiler == 'msvc'
