@@ -83,7 +83,7 @@ jobs:
 
     - name: Print error messages from build
       if: runner.os == 'macOS' && failure()
-      run: cat   /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-out.log
+      run: cat   /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-err.log
 
     - name: Build
       run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
