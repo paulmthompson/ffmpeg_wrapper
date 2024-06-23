@@ -40,6 +40,21 @@
         }
       },
       {
+        "name": "mac-amd64-base",
+        "inherits": [
+          "default"
+        ],
+        "hidden": true,
+        "condition": {
+          "type": "equals",
+          "lhs": "${hostSystemName}",
+          "rhs": "Darwin"
+        },
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-osx-dynamic"
+        }
+      },
+      {
         "name": "linux-base",
         "inherits": ["default"],
         "hidden": true,
@@ -205,7 +220,10 @@
           "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
       },
-
+      {
+        "name": "mac-amd64-clang-release",
+        "inherits": ["mac-amd64-base", "clang-release-base"]
+      },
       {
         "name": "linux-gcc-release",
         "inherits": ["linux-base","gcc-release-base"]
@@ -250,7 +268,10 @@
         "name": "windows-msvc-debug",
         "configurePreset": "windows-msvc-debug"
       },
-
+      {
+        "name": "mac-amd64-clang-release",
+        "configurePreset": "mac-amd64-clang-release"
+      },
       {
         "name": "linux-gcc-release",
         "configurePreset": "linux-gcc-release"
@@ -295,7 +316,10 @@
         "name": "windows-msvc-debug",
         "configurePreset": "windows-msvc-debug"
       },
-
+      {
+        "name": "mac-amd64-clang-release",
+        "configurePreset": "mac-amd64-clang-release"
+      },
       {
         "name": "linux-gcc-release",
         "configurePreset": "linux-gcc-release"

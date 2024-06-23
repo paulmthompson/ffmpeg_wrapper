@@ -16,6 +16,7 @@ jobs:
           #- {"os": windows-latest, short: windows, compiler: gcc, shell: msys2}
           - {"os": windows-latest, short: windows, compiler: clang, shell: msys2}
           - {"os": windows-latest, short: windows, compiler: msvc, shell: powershell}
+          - {"os": macos-13, short: mac-amd64, compiler: clang, shell: bash}
 
     runs-on: ${{matrix.os}}
 
@@ -30,6 +31,10 @@ jobs:
     - uses: actions/checkout@v3
 
     - uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      if: runner.os == 'macOS'
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows' && matrix.compiler == 'msvc'
@@ -53,6 +58,7 @@ jobs:
           mingw-w64-x86_64-cmake
     
     - name: "Set environmental variables"
+      if: runner.os == 'Linux' || runner.os == 'Windows'
       shell: bash
       run: |
         echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
