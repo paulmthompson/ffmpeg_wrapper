@@ -27,11 +27,13 @@ include(enable_sanitizers)
 Manifest mode from VCPKG will make all dependancies specified in vcpkg.json be associated and installed
 with this particular project
 ]]
-set(VCPKG_MANIFEST_MODE ON)
 
 if(APPLE)
+  message(STATUS "enabling unsupported install for mac to use nvcodec")
   set(VCPKG_INSTALL_OPTIONS "--allow-unsupported")
 endif()
+
+set(VCPKG_MANIFEST_MODE ON)
 
 #set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
