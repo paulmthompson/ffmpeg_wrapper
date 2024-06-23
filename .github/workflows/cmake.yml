@@ -17,6 +17,7 @@ jobs:
           - {"os": windows-latest, short: windows, compiler: clang, shell: msys2}
           - {"os": windows-latest, short: windows, compiler: msvc, shell: powershell}
           - {"os": macos-13, short: mac-amd64, compiler: clang, shell: bash}
+          - {"os": macos-latest, short: mac-arm64, compiler: clang, shell: bash}
 
     runs-on: ${{matrix.os}}
 

@@ -260,6 +260,10 @@
         "inherits": ["mac-amd64-base", "clang-release-base"]
       },
       {
+        "name": "mac-arm64-clang-release",
+        "inherits": ["mac-arm64-base", "clang-release-base"]
+      },
+      {
         "name": "linux-gcc-release",
         "inherits": ["linux-base","gcc-release-base"]
       },
@@ -308,6 +312,10 @@
         "configurePreset": "mac-amd64-clang-release"
       },
       {
+        "name": "mac-arm64-clang-release",
+        "configurePreset": "mac-arm64-clang-release"
+      },
+      {
         "name": "linux-gcc-release",
         "configurePreset": "linux-gcc-release"
       },
@@ -354,6 +362,10 @@
       {
         "name": "mac-amd64-clang-release",
         "configurePreset": "mac-amd64-clang-release"
+      },
+      {
+        "name": "mac-arm64-clang-release",
+        "configurePreset": "mac-arm64-clang-release"
       },
       {
         "name": "linux-gcc-release",
