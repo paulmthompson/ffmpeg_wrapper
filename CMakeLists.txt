@@ -29,6 +29,10 @@ with this particular project
 ]]
 set(VCPKG_MANIFEST_MODE ON)
 
+if(APPLE)
+  set(VCPKG_INSTALL_OPTIONS "--allow-unsupported")
+endif()
+
 #set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 #=============================
