@@ -44,14 +44,17 @@ target_include_directories(ffmpeg_wrapper
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/libavinc/include>"
 )
 
-#[[
-Public headers are installed with their relative paths removed
-]]
-set(Public_Headers
-        headers/ffmpeg_wrapper/videodecoder.h
-        headers/ffmpeg_wrapper/videoencoder.h
+target_sources(
+        ffmpeg_wrapper
+        PUBLIC
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS headers
+        FILES
+            headers/ffmpeg_wrapper/videoencoder.h
+            headers/ffmpeg_wrapper/videodecoder.h
 )
-set_target_properties(ffmpeg_wrapper PROPERTIES PUBLIC_HEADER "${Public_Headers}")
+
 
 #[[
 In general, it is not good practice to export all symbols from a shared library

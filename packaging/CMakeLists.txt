@@ -17,8 +17,8 @@ install(TARGETS ffmpeg_wrapper libavinc libboost
         DESTINATION ${CMAKE_INSTALL_BINDIR}
         INCLUDES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        PUBLIC_HEADER
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ffmpeg_wrapper # include/SomeLibrary
+        FILE_SET
+        public_headers
 )
 
 install(TARGETS ffmpeg_wrapper RUNTIME_DEPENDENCY_SET appDeps)
