@@ -1,5 +1,5 @@
 if(PROJECT_IS_TOP_LEVEL)
-    option(ENABLE_IWYU "Enable include-what-you-use" ON)
+    option(ENABLE_IWYU "Enable include-what-you-use" OFF)
     if(ENABLE_IWYU)
         set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
         find_program(INCLUDE_WHAT_YOU_USE_EXECUTABLE
