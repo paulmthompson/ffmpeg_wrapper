@@ -94,3 +94,6 @@ jobs:
     - name: Test
       run: ctest --verbose -LE "GPU_TEST" --preset ${{matrix.short}}-${{matrix.compiler}}-release -C ${{matrix.short}}-${{matrix.compiler}}-release
       working-directory: ${{ github.workspace }}
+
+    - name: Install
+      run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release --target install
