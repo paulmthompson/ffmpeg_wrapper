@@ -43,9 +43,7 @@ ELSE()
             [[ld.*]] [[libbz2.*]] [[libdl.*]] [[libgmp.*]] [[libgnutls.*]] [[libhogweed.*]]
             [[libpthread.*]] [[librt.*]] [[libz.*]]
             POST_EXCLUDE_REGEXES
-            [[/lib/x86_64-linux-gnu/libavcodec.*]]
-            [[/lib/x86_64-linux-gnu/libavutil.*]]
-            [[/lib/x86_64-linux-gnu/libswresample.*]]
+            [[/lib/x86_64-linux-gnu/*]]
     )
 
 ENDIF()
