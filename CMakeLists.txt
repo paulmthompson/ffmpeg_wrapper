@@ -22,6 +22,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(set_rpath)
 include(enable_sanitizers)
+include(iwyu)
 
 #[[
 Manifest mode from VCPKG will make all dependancies specified in vcpkg.json be associated and installed
