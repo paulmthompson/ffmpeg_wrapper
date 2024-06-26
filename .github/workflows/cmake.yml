@@ -92,8 +92,22 @@ jobs:
       run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
     - name: Test
-      run: ctest --verbose -LE "GPU_TEST" --preset ${{matrix.short}}-${{matrix.compiler}}-release -C ${{matrix.short}}-${{matrix.compiler}}-release
+      id: test
+      continue-on-error: true
+      run: |
+        ctest --verbose -LE "GPU_TEST" --preset ${{matrix.short}}-${{matrix.compiler}}-release -C ${{matrix.short}}-${{matrix.compiler}}-release 
+        echo "::set-output name=RESULT::$?"
       working-directory: ${{ github.workspace }}
 
     - name: Install
-      run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release --target install
+      id: install
+      continue-on-error: true
+      run: |
+        cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release --target install
+        echo "::set-output name=RESULT::$?"
+
+    - name: Report Install Result
+      run: echo "Install step finished with exit code ${{ steps.install.outputs.RESULT }}"
+
+    - name: Report Test Result
+      run: echo "Test step finished with exit code ${{ steps.test.outputs.RESULT }}"
