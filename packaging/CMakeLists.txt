@@ -33,6 +33,7 @@ IF (WIN32)
             [[libgcc_s_seh-1\.dll]] [[libstdc\+\+\-6.dll]]
             POST_EXCLUDE_REGEXES
             [[.*/system32/.*\.dll]]
+            [[.*/${CMAKE_BINARY_DIR}/.*]]
     )
 
 ELSE()
