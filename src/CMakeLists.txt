@@ -61,3 +61,7 @@ In general, it is not good practice to export all symbols from a shared library
 Specific class and functions can be exported using the __declspec(dllexport) keywords in the header file
 ]]
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+set_target_properties(ffmpeg_wrapper PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
