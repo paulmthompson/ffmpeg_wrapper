@@ -2,9 +2,10 @@
 #define VIDEOENCODER_H
 
 #include "libavinc/libavinc.hpp"
+
+#include <stdint.h>
 #include <string>
 #include <vector>
-#include <stdio.h>
 
 #if defined _WIN32 || defined __CYGWIN__
 	#define DLLOPT __declspec(dllexport)
@@ -54,18 +55,18 @@ private:
     libav::AVFrame _frame; //This frame has the same format as the camera
     libav::AVFrame _frame_nv12; // This frame must be compatible with hardware encoding (nv12). frame will be scaled to frame_2.
 
-    int _frame_count;
-    int _width;
-    int _height;
-    int _fps;
-    bool _hardware_encode;
-    bool _flush_state;
+    int _frame_count {0};
+    int _width {640};
+    int _height {480};
+    int _fps {30};
+    bool _hardware_encode {true};
+    bool _flush_state {false};
 
-    std::string _encoder_name;
-    std::string _file_path;
-    std::string _file_name;
+    std::string _encoder_name {"h264_nvenc"};
+    std::string _file_path {"./"};
+    std::string _file_name {"test.mp4"};
 
-    bool _verbose;
+    bool _verbose {false};
 
 };
 

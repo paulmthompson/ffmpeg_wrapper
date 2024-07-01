@@ -2,7 +2,9 @@
 #define VIDEODECODER_H
 
 #include "libavinc/libavinc.hpp"
+
 #include <boost/circular_buffer.hpp>
+
 #include <string>
 #include <vector>
 

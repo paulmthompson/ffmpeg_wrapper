@@ -2,24 +2,25 @@
 
 #include "libavinc/libavinc.hpp"
 
-#include <functional>
-#include <string>
-#include <memory>
-#include <filesystem>
+#include "libavformat/avformat.h"
+#include "libavformat/avio.h"
+#include "libavutil/frame.h"
+#include "libavutil/pixfmt.h"
 
-#include <chrono>  // for high_resolution_clock
+#include <chrono>
+#include <cstring> //memcpy
+#include <filesystem>
+#include <functional>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+
 
 namespace ffmpeg_wrapper {
 
 VideoEncoder::VideoEncoder() {
-    _width = 640;
-    _height = 480;
-    _frame_count = 0;
-    _file_path = "./";
-    _file_name = "test.mp4";
-    _hardware_encode = true;
-    _flush_state = false;
+
 }
 
 VideoEncoder::VideoEncoder(int width, int height, int fps) {
@@ -109,7 +110,7 @@ int VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
     int write_frame_err;
     if (!_flush_state) {
         ::av_frame_make_writable(_frame.get());
-        memcpy(_frame->data[0], input_data.data(), _height * _width);
+        std::memcpy(_frame->data[0], input_data.data(), _height * _width);
 
         auto t1 = std::chrono::high_resolution_clock::now();
         //libav::AVFrame nvframe = libav::convert_frame(frame,width,height,::AV_PIX_FMT_NV12);
