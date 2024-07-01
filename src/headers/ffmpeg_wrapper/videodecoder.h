@@ -3,8 +3,13 @@
 
 #include "libavinc/libavinc.hpp"
 
+#include "libavformat/avformat.h"
+#include "libavutil/frame.h"
+
 #include <boost/circular_buffer.hpp>
 
+#include <memory>
+#include <stdint.h>
 #include <string>
 #include <vector>
 

@@ -2,13 +2,17 @@
 
 #include "libavinc/libavinc.hpp"
 
-#include <functional>
-#include <string>
-#include <memory>
-#include <algorithm>
-#include <numeric>
+#include "libavcodec/packet.h"
+#include "libavutil/pixfmt.h"
 
+#include <algorithm>
 #include <chrono>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace ffmpeg_wrapper {
 
@@ -342,7 +346,7 @@ int VideoDecoder::_getFormatBytes()
 void VideoDecoder::_togray8(::AVFrame* frame, std::vector<uint8_t> &output) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
-    memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
+    std::memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
     auto t2 = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = t2 - t1;
