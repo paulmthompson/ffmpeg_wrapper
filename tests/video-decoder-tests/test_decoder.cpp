@@ -4,11 +4,18 @@
 
 #include "ffmpeg_wrapper/VideoDecoder.h"
 
+#include <string>
+
 TEST_CASE("VideoDecoder object creation", "[ffmpeg_wrapper]") {
-SECTION("Create a VideoDecoder object") {
+    SECTION("Create a VideoDecoder object") {
 
-ffmpeg_wrapper::VideoDecoder decoder;
+        std::string video_filename = "data/test_each_frame_number.mp4";
 
-REQUIRE(true); // Placeholder check, replace with actual verification if needed
-}
+        ffmpeg_wrapper::VideoDecoder decoder;
+        decoder.createMedia(video_filename);
+
+        CHECK(decoder.getHeight() == 480);
+        CHECK(decoder.getWidth() == 640);
+
+    }
 }
