@@ -108,6 +108,7 @@ inline void av_dict_free(::AVDictionary* d)
 ///////////////////////////////////////////////////////////////////////////////
 using AVIOContext = std::unique_ptr<::AVIOContext, void (*)(::AVIOContext*)>;
 
+
 inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
     std::function<int(uint8_t*, int)> write,
     std::function<int64_t(int64_t, int)> seek,
@@ -144,11 +145,33 @@ inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
         });
 }
 
+/**
+ * Allocates and initializes an AVIOContext with custom read and seek operations, creating a read-only context.
+ * This function is a convenience wrapper that sets up a read-only AVIOContext by providing custom read and seek
+ * functions, while disabling the write functionality. It is particularly useful for scenarios where only reading
+ * and seeking operations are required, and writing to the stream is either not needed or not supported.
+ *
+ * @param read A std::function object representing the custom read operation. It should match the signature
+ *             `int(uint8_t* buf, int buf_size)` where `buf` is a pointer to the buffer where the read data should
+ *             be stored, and `buf_size` is the size of the buffer. The function should return the number of bytes
+ *             read, or a negative value on error.
+ * @param seek A std::function object representing the custom seek operation. It should match the signature
+ *             `int64_t(int64_t offset, int whence)` where `offset` is the offset from the location specified by
+ *             `whence`, which can be one of the standard `SEEK_SET`, `SEEK_CUR`, or `SEEK_END`. The function should
+ *             return the resulting offset location as measured in bytes from the beginning of the stream, or a
+ *             negative value on error.
+ * @param buffer_size The size of the buffer to be used for I/O operations in bytes. This value should be chosen
+ *                    based on the expected workload and stream characteristics for optimal performance.
+ * @return Returns an AVIOContext object wrapped in a std::unique_ptr with a custom deleter. The AVIOContext is
+ *         configured for read-only access with the provided read and seek functions.
+ */
 inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
-    std::function<int64_t(int64_t, int)> seek, int buffer_size)
+                                      std::function<int64_t(int64_t, int)> seek,
+                                      int buffer_size)
 {
+    auto write = [](uint8_t*, int) { return 0; };
     return libav::avio_alloc_context(
-        read, [](uint8_t*, int) { return 0; }, seek, 0, buffer_size);
+        read, write, seek, 0, buffer_size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
