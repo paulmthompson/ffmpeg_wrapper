@@ -2,7 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-#include "ffmpeg_wrapper/VideoDecoder.h"
+#include "ffmpeg_wrapper/videodecoder.h"
 
 #include <string>
 
