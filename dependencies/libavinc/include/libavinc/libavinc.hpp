@@ -599,49 +599,71 @@ inline AVCodecContext& find_open_video_stream(AVFormatContext& fmtCtx)
     return err;
 }
 
-/*
-Here we will take a packet, and read frames.
-This functional will have a normal end when there are no more frames in the packet and the EAGAIN error will be thrown
-Consequently, EAGAIN is considered normal and the entire function will return 0
-If a different error is returned from avcodec_receive_frame, the function stops and the error is propogated
-
-Note that there may be multiple frames in a packet, and . Consequently the 
-std::function passed should evaluate the timestamp of the frame that is returned because it may not be the one needed if there are multiple
-
-*This function currently does not account for B frames, which depend on previous AND future packets to be decoded*
-
-https://stackoverflow.com/questions/55354120/ffmpeg-avcodec-receive-frame-returns-averroreagain
-*/
-inline int avcodec_send_packet(AVFormatContext& fmtCtx, ::AVPacket* pkt,
-    std::function<void(AVFrame)> onFrame)
+/**
+ * Sends a packet to the decoder and processes all resulting frames.
+ *
+ * This function sends a packet to the decoder associated with the packet's stream index within the given format context.
+ * It then enters a loop to receive and process all frames resulting from the decoding of the packet. The processing of
+ * each frame is handled by the `onFrame` callback function provided by the caller. The loop continues until no more frames
+ * are available or an error occurs. If the error `AVERROR(EAGAIN)` is returned, it indicates that further input is required
+ * before more frames can be decoded, and the function returns 0 to signal this expected state. Any other error will halt
+ * the processing and return the error code.
+ *
+ * Ref:
+ * https://stackoverflow.com/questions/55354120/ffmpeg-avcodec-receive-frame-returns-averroreagain
+ *
+ *
+ * @param fmtCtx The format context containing the stream to which the packet belongs.
+ * @param pkt The packet to be sent to the decoder. Must not be `nullptr`.
+ * @param onFrame A callback function to be called for each decoded frame. The function signature should match
+ *                `void(AVFrame)`, where the `AVFrame` is the decoded frame.
+ * @return Returns 0 if the packet was processed successfully or if `AVERROR(EAGAIN)` was returned indicating that
+ *         further input is needed. Any other error code is returned if an error occurred during processing.
+ */
+inline int avcodec_send_packet(AVFormatContext& fmtCtx,
+                               ::AVPacket* pkt,
+                               std::function<void(AVFrame)> onFrame)
 {
     int err = AVERROR(1);
     auto codecCtx = fmtCtx.open_streams.find(pkt->stream_index);
+
     if (codecCtx != fmtCtx.open_streams.end()) {
-        ::avcodec_send_packet(codecCtx->second.get(), pkt);
-        for (;;) {
+        err = ::avcodec_send_packet(codecCtx->second.get(), pkt);
+        while (err >= 0 ) {
             auto frame = av_frame_alloc();
             err = ::avcodec_receive_frame(codecCtx->second.get(), frame.get());
-            if (err < 0) {
-                break;
-            }
-
+            if (err < 0) break;
             onFrame(frame);
         };
     }
     return err == AVERROR(EAGAIN) ? 0 : err;
-    //return err;
 }
 
-inline int avcodec_send_packet(AVFormatContext& fmtCtx,
-    std::function<void(AVFrame)> onFrame)
-{
- //   ::AVPacket pkt;
-    ::AVPacket* pkt = ::av_packet_alloc();
-//    ::av_init_packet(&pkt);
-    pkt->data = nullptr, pkt->size = 0;
-    return avcodec_send_packet(fmtCtx, pkt, onFrame);
+/**
+ * Flushes the decoder by sending an empty packet.
+ *
+ * This function is designed to flush the internal buffers of the decoder. It allocates an empty packet
+ * (both data and size set to zero) and sends it to the decoder through the `avcodec_send_packet` function.
+ * This operation signals the decoder that there are no more packets to decode, prompting it to process
+ * and return any frames that are still buffered within. The function then frees the allocated packet to
+ * prevent memory leaks. This is particularly useful at the end of a decoding process to ensure all
+ * buffered frames are processed and returned.
+ *
+ * @param fmtCtx The format context associated with the decoder. It contains the decoder's state and stream information.
+ * @param onFrame A callback function that will be called for each frame that is flushed from the decoder. The callback
+ *                function must accept an `AVFrame` as its parameter.
+ * @return Returns the result of the `avcodec_send_packet` function. A return value of 0 indicates success, while
+ *         a negative value indicates an error.
+ */
+inline int flush_decoder(AVFormatContext& fmtCtx, std::function<void(AVFrame)> onFrame) {
+    ::AVPacket* flushPkt = ::av_packet_alloc();
+    flushPkt->data = nullptr;
+    flushPkt->size = 0;
+    int result = avcodec_send_packet(fmtCtx, flushPkt, onFrame);
+    ::av_packet_free(&flushPkt);
+    return result;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /*
 using AVFilterGraphBase = std::unique_ptr<::AVFilterGraph, void (*)(::AVFilterGraph*)>;
