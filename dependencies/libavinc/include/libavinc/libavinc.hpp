@@ -108,11 +108,34 @@ inline void av_dict_free(::AVDictionary* d)
 ///////////////////////////////////////////////////////////////////////////////
 using AVIOContext = std::unique_ptr<::AVIOContext, void (*)(::AVIOContext*)>;
 
-
+/**
+ * @brief Allocates and initializes an AVIOContext for custom I/O operations.
+ *
+ * This function creates an AVIOContext that can be used for custom input/output operations
+ * in FFmpeg. It allows the user to define custom read, write, and seek operations through
+ * std::function callbacks.
+ *
+ * @param read A std::function for the read operation. It should take a buffer and its size as parameters,
+ *             returning the number of bytes read. It matches the signature `int(uint8_t* buf, int buf_size)`.
+ * @param write A std::function for the write operation. It should take a buffer and its size as parameters,
+ *              returning the number of bytes written. It matches the signature `int(uint8_t* buf, int buf_size)`.
+ *              This parameter is used only if the write_flag is set to enable writing.
+ * @param seek A std::function for the seek operation. It should take an offset and a whence as parameters,
+ *             returning the new offset from the beginning of the stream. It matches the signature
+ *             `int64_t(int64_t offset, int whence)`.
+ * @param buffer_size The size of the internal buffer FFmpeg will use for I/O operations, in bytes.
+ * @param write_flag An integer flag indicating if writing should be enabled (non-zero) or disabled (zero).
+ *                   When writing is disabled, the write function will not be used.
+ *
+ * @return An AVIOContext wrapped in a std::unique_ptr with a custom deleter. This context should be used
+ *         with FFmpeg functions that require an AVIOContext. The custom deleter ensures that resources
+ *         are properly freed when the context is no longer needed.
+ */
 inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
-    std::function<int(uint8_t*, int)> write,
-    std::function<int64_t(int64_t, int)> seek,
-    int buffer_size, int write_flag)
+                                      std::function<int(uint8_t*, int)> write,
+                                      std::function<int64_t(int64_t, int)> seek,
+                                      int buffer_size,
+                                      int write_flag)
 {
     struct opaque_t {
         std::function<int(uint8_t*, int)> read;
@@ -123,24 +146,35 @@ inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
     // create a copy of the functions to enable captures
     auto buffer = (unsigned char*)::av_malloc(buffer_size);
     auto opaque = new opaque_t { read, write, seek };
+
+    auto read_wrapper = [](void* opaque, uint8_t* buf, int buf_size) -> int {
+        auto o = reinterpret_cast<opaque_t*>(opaque);
+        return o->read(buf, buf_size);
+    };
+
+    auto write_wrapper = [](void* opaque, uint8_t* buf, int buf_size) -> int {
+        auto o = reinterpret_cast<opaque_t*>(opaque);
+        return o->write(buf, buf_size);
+    };
+
+    auto seek_wrapper = [](void* opaque, int64_t offset, int whence) -> int64_t {
+        auto o = reinterpret_cast<opaque_t*>(opaque);
+        return o->seek(offset, whence);
+    };
+
     return AVIOContext(
         ::avio_alloc_context(
-            buffer, buffer_size, write_flag, opaque,
-            [](void* opaque, uint8_t* buf, int buf_size) {
-                auto o = reinterpret_cast<opaque_t*>(opaque);
-                return o->read(buf, buf_size);
-            },
-            [](void* opaque, uint8_t* buf, int buf_size) {
-                auto o = reinterpret_cast<opaque_t*>(opaque);
-                return o->write(buf, buf_size);
-            },
-            [](void* opaque, int64_t offset, int whence) {
-                auto o = reinterpret_cast<opaque_t*>(opaque);
-                return o->seek(offset, whence);
-            }),
-        [](::AVIOContext* c) {
+            buffer,
+            buffer_size,
+            write_flag,
+            opaque,
+            read_wrapper,
+            write_wrapper,
+            seek_wrapper),
+            [](::AVIOContext* c) {
             delete reinterpret_cast<opaque_t*>(c->opaque);
-            av_free(c->buffer), c->buffer = nullptr;
+            av_free(c->buffer),
+            c->buffer = nullptr;
             ::avio_context_free(&c);
         });
 }
