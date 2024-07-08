@@ -24,3 +24,5 @@ include(Catch)
 Then we can test an out-of-source build, meaning that ffmpeg_wrapper source code will be included in that project.
 ]]
 add_subdirectory(video-encoder-tests)
+
+add_subdirectory(video-decoder-tests)
