@@ -35,6 +35,11 @@ endfunction()
 
 set(DATA_FILES_TO_COPY
         "test_each_frame_number.mp4"
+        "frame_0.bin"
+        "frame_100.bin"
+        "frame_200.bin"
+        "frame_300.bin"
+        "frame_400.bin"
 )
 
 copy_files(decoder_tests
