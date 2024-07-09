@@ -26,6 +26,17 @@ inline void save_decoded_image_as_binary(const std::vector<uint8_t>& decoded_ima
     file.write(reinterpret_cast<const char*>(decoded_image.data()), decoded_image.size());
 }
 
+size_t calculate_pixel_difference(const std::vector<uint8_t>& original, const std::vector<uint8_t>& decoded, int tolerance) {
+    size_t diff_count = 0;
+    for(size_t i = 0; i < original.size(); ++i) {
+        if(std::abs(original[i] - decoded[i]) > tolerance) {
+            ++diff_count;
+        }
+    }
+    std::cout << "Number of different elements: " << diff_count << std::endl;
+    return diff_count;
+}
+
 TEST_CASE("VideoDecoder object creation", "[ffmpeg_wrapper]") {
     SECTION("Create a VideoDecoder object") {
 
@@ -46,16 +57,8 @@ TEST_CASE("VideoDecoder object creation", "[ffmpeg_wrapper]") {
         CHECK(frame_0.size() == frame_0_decoded.size());
 
         int tolerance = 5;
-
-        size_t diff_count = 0;
-        for(size_t i = 0; i < frame_0.size(); ++i) {
-            if(std::abs(frame_0[i] - frame_0_decoded[i]) > tolerance) {
-                ++diff_count;
-            }
-        }
-
-        std::cout << "Number of different elements: " << diff_count << std::endl;
-
+        size_t diff_count = calculate_pixel_difference(frame_0, frame_0_decoded, tolerance);
         CHECK(diff_count == 0);
+
     }
 }
