@@ -189,8 +189,6 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     std::vector<uint8_t> output(_height * _width * _getFormatBytes());
 
     const int64_t desired_frame_pts = _pts[desired_frame];
-    int64_t current_pkt_pts = _pkt.get()->pts;
-    auto current_pkt_frame = _findFrameByPts(current_pkt_pts);
 
     if (_frame_buf->isFrameInBuffer(desired_frame)) {
         auto frame = _frame_buf->getFrameFromBuffer(desired_frame);
@@ -199,11 +197,11 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     }
 
     const int64_t desired_nearest_iframe = nearest_iframe(desired_frame);
-    if (desired_frame < current_pkt_frame || desired_nearest_iframe > current_pkt_frame) {
+    if (desired_frame < _findFrameByPts(_pkt.get()->pts) || desired_nearest_iframe > _findFrameByPts(_pkt.get()->pts)) {
         _seekToFrame(desired_nearest_iframe, desired_frame == desired_nearest_iframe);
     }
 
-    if (desired_frame != current_pkt_frame) {
+    if (desired_frame != _findFrameByPts(_pkt.get()->pts)) {
         ++(_pkt);
     }
 
@@ -216,13 +214,12 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     bool is_frame_to_display = false;
     while (!is_frame_to_display) {
 
-        current_pkt_frame = _findFrameByPts(_pkt.get()->pts);
         is_packet_decoded = false;
         auto frame_pts = _pkt.get()->pts;
 
         auto err = libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
 
-            _frame_buf->addFrametoBuffer(frame, current_pkt_frame);
+            _frame_buf->addFrametoBuffer(frame, _findFrameByPts(_pkt.get()->pts));
             is_packet_decoded = true;
             if (frame.get()->pts == desired_frame_pts) {
                 is_frame_to_display = true;

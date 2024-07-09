@@ -164,7 +164,7 @@ TEST_CASE("Seek to keyframes","[ffmpeg_wrapper]")
     decoder.createMedia(video_filename);
     decoder.getFrame(0);
 
-    //decoder.getFrame(250);
+    decoder.getFrame(250);
 
     //auto frame_decoded_500 = decoder.getFrame(500);
     //size_t diff_count = calculate_pixel_difference(frame_500, frame_decoded_500, tolerance);
