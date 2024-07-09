@@ -197,7 +197,8 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     }
 
     const int64_t desired_nearest_iframe = nearest_iframe(desired_frame);
-    if (desired_frame < _findFrameByPts(_pkt.get()->pts) || desired_nearest_iframe > _findFrameByPts(_pkt.get()->pts)) {
+    auto distance_to_next_iframe = desired_nearest_iframe - _findFrameByPts(_pkt.get()->pts);
+    if (desired_frame < _findFrameByPts(_pkt.get()->pts) ||  distance_to_next_iframe > 10) {
         _seekToFrame(desired_nearest_iframe, desired_frame == desired_nearest_iframe);
     }
 

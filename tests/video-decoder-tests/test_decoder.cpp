@@ -190,3 +190,24 @@ TEST_CASE("Seek to keyframe and move backward","[ffmpeg_wrapper]")
     CHECK(diff_count == 0);
 }
 
+TEST_CASE("VideoDecoder get frame by frame past keyframe", "[ffmpeg_wrapper]") {
+
+    ffmpeg_wrapper::VideoDecoder decoder;
+    decoder.createMedia(video_filename);
+
+    for (int i = 0; i < 250; ++i) {
+        auto frame_decoded = decoder.getFrame(i);
+    }
+
+    decoder.getFrame(250);
+
+    for (int i = 251; i < 300; ++i) {
+        auto frame_decoded = decoder.getFrame(i);
+    }
+
+    auto frame_300_decoded = decoder.getFrame(300);
+
+    size_t diff_count = calculate_pixel_difference(frame_300, frame_300_decoded, tolerance);
+    CHECK(diff_count == 0);
+
+}
