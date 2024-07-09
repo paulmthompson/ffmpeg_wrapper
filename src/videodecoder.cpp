@@ -157,12 +157,15 @@ void VideoDecoder::createMedia(const std::string &filename) {
 
     //Now let's decode the first frame
 
+    _pkt = std::move(_media.begin());
     _seekToFrame(0);
 
+    /*
     libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
         // Use that decoded frame to set up the frame buffer properties
         //frame_buf->buildFrameBuffer(largest_diff,frame);
     });
+     */
 
     _frame_buf->buildFrameBuffer(largest_diff);
 
@@ -196,15 +199,19 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
         return output;
     }
 
+    bool seek_flag = false;
     const int64_t desired_nearest_iframe = nearest_iframe(desired_frame);
     auto distance_to_next_iframe = desired_nearest_iframe - _findFrameByPts(_pkt.get()->pts);
     if (desired_frame < _findFrameByPts(_pkt.get()->pts) ||  distance_to_next_iframe > 10) {
         _seekToFrame(desired_nearest_iframe, desired_frame == desired_nearest_iframe);
+        seek_flag = true;
     }
 
-    if (desired_frame != _findFrameByPts(_pkt.get()->pts)) {
+
+    if (desired_frame != _findFrameByPts(_pkt.get()->pts) && !seek_flag) {
         ++(_pkt);
     }
+
 
     bool is_packet_decoded = false;
 
@@ -320,7 +327,10 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
 
     //We should include an offset here if the starting time is not equal to 0.
 
-    _pkt.reset(); // Does this flush buffers?
+    //flush_decoder(_media, _pkt->stream_index);
+    //_pkt.reset(); // Does this flush buffers?
+    auto codecCtx = _media.open_streams.find(_pkt->stream_index);
+    codecCtx->second.flush_buffers();
 
     libav::flicks time = libav::av_rescale(frame,
                                            {_media->streams[0]->r_frame_rate.den,
@@ -366,18 +376,18 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
 }
 
 /**
- *
- * Frames in a video file have unique PTS values that roughly correspond to time stamps
- * When we first read the video file, we keep a vector of all PTS values
- * in the pts member variable. So if we have a pts value, we can find the frame ID
- * By searching the dictionary
- *
- * Note, this the pts vector should be in increasing order, so a more efficient search method
- * could be used here
- *
- * @param pts
- * @return frame with matching pts input value
- */
+*
+* Frames in a video file have unique PTS values that roughly correspond to time stamps
+* When we first read the video file, we keep a vector of all PTS values
+* in the pts member variable. So if we have a pts value, we can find the frame ID
+* By searching the dictionary
+*
+* Note, this the pts vector should be in increasing order, so a more efficient search method
+* could be used here
+*
+* @param pts
+* @return frame with matching pts input value
+*/
 int64_t VideoDecoder::_findFrameByPts(uint64_t pts)
 
 {
