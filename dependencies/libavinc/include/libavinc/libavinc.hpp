@@ -42,9 +42,9 @@ extern "C" {
 }
 
 #if defined _WIN32 || defined __CYGWIN__
-	#define DLLOPT __declspec(dllexport)
+#define DLLOPT __declspec(dllexport)
 #else
-	#define DLLOPT __attribute__((visibility("default")))
+#define DLLOPT __attribute__((visibility("default")))
 #endif
 
 #include <chrono>
@@ -108,10 +108,34 @@ inline void av_dict_free(::AVDictionary* d)
 ///////////////////////////////////////////////////////////////////////////////
 using AVIOContext = std::unique_ptr<::AVIOContext, void (*)(::AVIOContext*)>;
 
+/**
+* @brief Allocates and initializes an AVIOContext for custom I/O operations.
+*
+* This function creates an AVIOContext that can be used for custom input/output operations
+* in FFmpeg. It allows the user to define custom read, write, and seek operations through
+* std::function callbacks.
+*
+* @param read A std::function for the read operation. It should take a buffer and its size as parameters,
+*             returning the number of bytes read. It matches the signature `int(uint8_t* buf, int buf_size)`.
+* @param write A std::function for the write operation. It should take a buffer and its size as parameters,
+*              returning the number of bytes written. It matches the signature `int(uint8_t* buf, int buf_size)`.
+*              This parameter is used only if the write_flag is set to enable writing.
+* @param seek A std::function for the seek operation. It should take an offset and a whence as parameters,
+*             returning the new offset from the beginning of the stream. It matches the signature
+*             `int64_t(int64_t offset, int whence)`.
+* @param buffer_size The size of the internal buffer FFmpeg will use for I/O operations, in bytes.
+* @param write_flag An integer flag indicating if writing should be enabled (non-zero) or disabled (zero).
+*                   When writing is disabled, the write function will not be used.
+*
+* @return An AVIOContext wrapped in a std::unique_ptr with a custom deleter. This context should be used
+*         with FFmpeg functions that require an AVIOContext. The custom deleter ensures that resources
+*         are properly freed when the context is no longer needed.
+*/
 inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
-    std::function<int(uint8_t*, int)> write,
-    std::function<int64_t(int64_t, int)> seek,
-    int buffer_size, int write_flag)
+                                      std::function<int(uint8_t*, int)> write,
+                                      std::function<int64_t(int64_t, int)> seek,
+                                      int buffer_size,
+                                      int write_flag)
 {
     struct opaque_t {
         std::function<int(uint8_t*, int)> read;
@@ -122,33 +146,66 @@ inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
     // create a copy of the functions to enable captures
     auto buffer = (unsigned char*)::av_malloc(buffer_size);
     auto opaque = new opaque_t { read, write, seek };
+
+    auto read_wrapper = [](void* opaque, uint8_t* buf, int buf_size) -> int {
+        auto o = reinterpret_cast<opaque_t*>(opaque);
+        return o->read(buf, buf_size);
+    };
+
+    auto write_wrapper = [](void* opaque, uint8_t* buf, int buf_size) -> int {
+        auto o = reinterpret_cast<opaque_t*>(opaque);
+        return o->write(buf, buf_size);
+    };
+
+    auto seek_wrapper = [](void* opaque, int64_t offset, int whence) -> int64_t {
+        auto o = reinterpret_cast<opaque_t*>(opaque);
+        return o->seek(offset, whence);
+    };
+
     return AVIOContext(
-        ::avio_alloc_context(
-            buffer, buffer_size, write_flag, opaque,
-            [](void* opaque, uint8_t* buf, int buf_size) {
-                auto o = reinterpret_cast<opaque_t*>(opaque);
-                return o->read(buf, buf_size);
-            },
-            [](void* opaque, uint8_t* buf, int buf_size) {
-                auto o = reinterpret_cast<opaque_t*>(opaque);
-                return o->write(buf, buf_size);
-            },
-            [](void* opaque, int64_t offset, int whence) {
-                auto o = reinterpret_cast<opaque_t*>(opaque);
-                return o->seek(offset, whence);
-            }),
-        [](::AVIOContext* c) {
-            delete reinterpret_cast<opaque_t*>(c->opaque);
-            av_free(c->buffer), c->buffer = nullptr;
-            ::avio_context_free(&c);
-        });
+            ::avio_alloc_context(
+                    buffer,
+                    buffer_size,
+                    write_flag,
+                    opaque,
+                    read_wrapper,
+                    write_wrapper,
+                    seek_wrapper),
+            [](::AVIOContext* c) {
+                delete reinterpret_cast<opaque_t*>(c->opaque);
+                av_free(c->buffer),
+                        c->buffer = nullptr;
+                ::avio_context_free(&c);
+            });
 }
 
+/**
+* Allocates and initializes an AVIOContext with custom read and seek operations, creating a read-only context.
+* This function is a convenience wrapper that sets up a read-only AVIOContext by providing custom read and seek
+* functions, while disabling the write functionality. It is particularly useful for scenarios where only reading
+* and seeking operations are required, and writing to the stream is either not needed or not supported.
+*
+* @param read A std::function object representing the custom read operation. It should match the signature
+*             `int(uint8_t* buf, int buf_size)` where `buf` is a pointer to the buffer where the read data should
+*             be stored, and `buf_size` is the size of the buffer. The function should return the number of bytes
+*             read, or a negative value on error.
+* @param seek A std::function object representing the custom seek operation. It should match the signature
+*             `int64_t(int64_t offset, int whence)` where `offset` is the offset from the location specified by
+*             `whence`, which can be one of the standard `SEEK_SET`, `SEEK_CUR`, or `SEEK_END`. The function should
+*             return the resulting offset location as measured in bytes from the beginning of the stream, or a
+*             negative value on error.
+* @param buffer_size The size of the buffer to be used for I/O operations in bytes. This value should be chosen
+*                    based on the expected workload and stream characteristics for optimal performance.
+* @return Returns an AVIOContext object wrapped in a std::unique_ptr with a custom deleter. The AVIOContext is
+*         configured for read-only access with the provided read and seek functions.
+*/
 inline AVIOContext avio_alloc_context(std::function<int(uint8_t*, int)> read,
-    std::function<int64_t(int64_t, int)> seek, int buffer_size)
+                                      std::function<int64_t(int64_t, int)> seek,
+                                      int buffer_size)
 {
+    auto write = [](uint8_t*, int) { return 0; };
     return libav::avio_alloc_context(
-        read, [](uint8_t*, int) { return 0; }, seek, 0, buffer_size);
+            read, write, seek, 0, buffer_size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,15 +253,15 @@ private:
     // End From Video
 public:
     AVPacket()
-        : AVPacketBase(nullptr, [](::AVPacket*) {})
-        , _fmtCtx(nullptr)
+            : AVPacketBase(nullptr, [](::AVPacket*) {})
+            , _fmtCtx(nullptr)
     {
     }
 
     AVPacket(::AVFormatContext* fmtCtx)
     //    : AVPacketBase(::av_packet_alloc(), [](::AVPacket* p) { ::av_packet_free(&p); }) Original Code
-        : AVPacketBase(::av_packet_alloc(), [](::AVPacket* pkt) {auto p = &pkt; ::av_packet_free(p); }) // From Video
-        , _fmtCtx(fmtCtx)
+            : AVPacketBase(::av_packet_alloc(), [](::AVPacket* pkt) {auto p = &pkt; ::av_packet_free(p); }) // From Video
+            , _fmtCtx(fmtCtx)
     {
         libav::av_read_frame(fmtCtx, get());
     }
@@ -249,7 +306,7 @@ using AVBufferRefBase = std::unique_ptr<::AVBufferRef,void (*)(::AVBufferRef*)>;
 class AVBufferRef : public AVBufferRefBase {
 public:
     AVBufferRef()
-        : AVBufferRefBase(nullptr, [](::AVBufferRef*) {})
+            : AVBufferRefBase(nullptr, [](::AVBufferRef*) {})
     {
     }
 
@@ -261,17 +318,17 @@ using AVCodecContextBase = std::unique_ptr<::AVCodecContext, void (*)(::AVCodecC
 class DLLOPT AVCodecContext : public AVCodecContextBase {
 public:
     AVCodecContext()
-        : AVCodecContextBase(nullptr, [](::AVCodecContext*) {})
-        {
-        }
+            : AVCodecContextBase(nullptr, [](::AVCodecContext*) {})
+    {
+    }
 
     template <class T>
     AVCodecContext(::AVCodecContext* Ctx, T deleter)
-        : AVCodecContextBase(Ctx,deleter)
-        {
+            : AVCodecContextBase(Ctx,deleter)
+    {
 
-        }
-    
+    }
+
     void flush_buffers() {
         ::avcodec_flush_buffers(get());
     }
@@ -280,13 +337,13 @@ public:
 class DLLOPT AVFormatContext : public AVFormatContextBase {
 public:
     AVFormatContext()
-        : AVFormatContextBase(nullptr, [](::AVFormatContext*) {})
+            : AVFormatContextBase(nullptr, [](::AVFormatContext*) {})
     {
     }
 
     template <class T>
     AVFormatContext(::AVFormatContext* fmtCtx, T deleter)
-        : AVFormatContextBase(fmtCtx, deleter)
+            : AVFormatContextBase(fmtCtx, deleter)
     {
     }
 
@@ -358,16 +415,16 @@ using AVStreamBase = std::unique_ptr<::AVStream, void (*)(::AVStream*)>;
 class DLLOPT AVStream : public AVStreamBase {
 public:
     AVStream()
-        : AVStreamBase(nullptr, [](::AVStream*) {})
-        {
-        }
+            : AVStreamBase(nullptr, [](::AVStream*) {})
+    {
+    }
 
     template <class T>
     AVStream(::AVStream* Ctx, T deleter)
-        : AVStreamBase(Ctx,deleter)
-        {
+            : AVStreamBase(Ctx,deleter)
+    {
 
-        }
+    }
 };
 
 inline int avformat_new_stream(AVFormatContext& fmtCtx, const ::AVCodecParameters* par)
@@ -468,8 +525,8 @@ inline AVFrame convert_frame(::AVFrame* frame, int width_out, int height_out, ::
 inline void convert_frame(AVFrame& frame_in, AVFrame& frame_out) {
 
     ::SwsContext * pContext = ::sws_getContext(frame_in->width, frame_in->height, (::AVPixelFormat)frame_in->format,
-                                          frame_out->width, frame_out->height, 
-                                          (::AVPixelFormat)frame_out->format, (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR), nullptr, nullptr, nullptr);
+                                               frame_out->width, frame_out->height,
+                                               (::AVPixelFormat)frame_out->format, (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR), nullptr, nullptr, nullptr);
     sws_scale(pContext, frame_in->data, frame_in->linesize, 0, frame_in->height, frame_out->data, frame_out->linesize);
 
     sws_freeContext(pContext);
@@ -480,23 +537,23 @@ inline void convert_frame(AVFrame& frame_in, AVFrame& frame_out) {
 inline int av_open_best_stream(AVFormatContext& fmtCtx, AVMediaType type, int related_stream = -1)
 {
     int idx = -1;
-    
+
     //https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg1862296.html
-    #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59,0,100)
-        ::AVCodec* codec = nullptr;
-        ::AVCodec** pcodec = &codec;
-    #else 
-        const ::AVCodec* codec = nullptr;
-        const ::AVCodec** pcodec = &codec;
-    #endif
-    
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59,0,100)
+    ::AVCodec* codec = nullptr;
+    ::AVCodec** pcodec = &codec;
+#else
+    const ::AVCodec* codec = nullptr;
+    const ::AVCodec** pcodec = &codec;
+#endif
+
     if ((idx = ::av_find_best_stream(fmtCtx.get(), type, -1, related_stream, pcodec, 0)) < 0) {
         return -1;
     }
     auto codecCtx = AVCodecContext(::avcodec_alloc_context3(codec),
-        [](::AVCodecContext* c) {
-            ::avcodec_free_context(&c);
-        });
+                                   [](::AVCodecContext* c) {
+                                       ::avcodec_free_context(&c);
+                                   });
 
     if (::avcodec_parameters_to_context(codecCtx.get(), fmtCtx->streams[idx]->codecpar) < 0) {
         return -1;
@@ -542,138 +599,160 @@ inline AVCodecContext& find_open_video_stream(AVFormatContext& fmtCtx)
     return err;
 }
 
-/*
-Here we will take a packet, and read frames.
-This functional will have a normal end when there are no more frames in the packet and the EAGAIN error will be thrown
-Consequently, EAGAIN is considered normal and the entire function will return 0
-If a different error is returned from avcodec_receive_frame, the function stops and the error is propogated
-
-Note that there may be multiple frames in a packet, and . Consequently the 
-std::function passed should evaluate the timestamp of the frame that is returned because it may not be the one needed if there are multiple
-
-*This function currently does not account for B frames, which depend on previous AND future packets to be decoded*
-
-https://stackoverflow.com/questions/55354120/ffmpeg-avcodec-receive-frame-returns-averroreagain
+/**
+* Sends a packet to the decoder and processes all resulting frames.
+*
+* This function sends a packet to the decoder associated with the packet's stream index within the given format context.
+* It then enters a loop to receive and process all frames resulting from the decoding of the packet. The processing of
+* each frame is handled by the `onFrame` callback function provided by the caller. The loop continues until no more frames
+* are available or an error occurs. If the error `AVERROR(EAGAIN)` is returned, it indicates that further input is required
+* before more frames can be decoded, and the function returns 0 to signal this expected state. Any other error will halt
+* the processing and return the error code.
+*
+* Ref:
+* https://stackoverflow.com/questions/55354120/ffmpeg-avcodec-receive-frame-returns-averroreagain
+*
+*
+* @param fmtCtx The format context containing the stream to which the packet belongs.
+* @param pkt The packet to be sent to the decoder. Must not be `nullptr`.
+* @param onFrame A callback function to be called for each decoded frame. The function signature should match
+*                `void(AVFrame)`, where the `AVFrame` is the decoded frame.
+* @return Returns 0 if the packet was processed successfully or if `AVERROR(EAGAIN)` was returned indicating that
+*         further input is needed. Any other error code is returned if an error occurred during processing.
 */
-inline int avcodec_send_packet(AVFormatContext& fmtCtx, ::AVPacket* pkt,
-    std::function<void(AVFrame)> onFrame)
+inline int avcodec_send_packet(AVFormatContext& fmtCtx,
+                               ::AVPacket* pkt,
+                               std::function<void(AVFrame)> onFrame)
 {
     int err = AVERROR(1);
     auto codecCtx = fmtCtx.open_streams.find(pkt->stream_index);
+
     if (codecCtx != fmtCtx.open_streams.end()) {
-        ::avcodec_send_packet(codecCtx->second.get(), pkt);
-        for (;;) {
+        err = ::avcodec_send_packet(codecCtx->second.get(), pkt);
+        while (err >= 0 ) {
             auto frame = av_frame_alloc();
             err = ::avcodec_receive_frame(codecCtx->second.get(), frame.get());
-            if (err < 0) {
-                break;
-            }
-
+            if (err < 0) break;
             onFrame(frame);
         };
     }
     return err == AVERROR(EAGAIN) ? 0 : err;
-    //return err;
 }
 
-inline int avcodec_send_packet(AVFormatContext& fmtCtx,
-    std::function<void(AVFrame)> onFrame)
-{
- //   ::AVPacket pkt;
-    ::AVPacket* pkt = ::av_packet_alloc();
-//    ::av_init_packet(&pkt);
-    pkt->data = nullptr, pkt->size = 0;
-    return avcodec_send_packet(fmtCtx, pkt, onFrame);
+/**
+* Flushes the decoder by sending an empty packet.
+*
+* This function is designed to flush the internal buffers of the decoder. It allocates an empty packet
+* (both data and size set to zero) and sends it to the decoder through the `avcodec_send_packet` function.
+* This operation signals the decoder that there are no more packets to decode, prompting it to process
+* and return any frames that are still buffered within. The function then frees the allocated packet to
+* prevent memory leaks. This is particularly useful at the end of a decoding process to ensure all
+* buffered frames are processed and returned.
+*
+* @param fmtCtx The format context associated with the decoder. It contains the decoder's state and stream information.
+* @param onFrame A callback function that will be called for each frame that is flushed from the decoder. The callback
+*                function must accept an `AVFrame` as its parameter.
+* @return Returns the result of the `avcodec_send_packet` function. A return value of 0 indicates success, while
+*         a negative value indicates an error.
+*/
+inline int flush_decoder(AVFormatContext& fmtCtx, std::function<void(AVFrame)> onFrame) {
+::AVPacket* flushPkt = ::av_packet_alloc();
+flushPkt->data = nullptr;
+flushPkt->size = 0;
+int result = avcodec_send_packet(fmtCtx, flushPkt, onFrame);
+::av_packet_free(&flushPkt);
+return result;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /*
 using AVFilterGraphBase = std::unique_ptr<::AVFilterGraph, void (*)(::AVFilterGraph*)>;
 class AVFilterGraph : public AVFilterGraphBase {
 public:
-    class AVFilterArgs : public std::string {
-    public:
-        AVFilterArgs(const char* fmt, ...)
-            : std::string(1024, 0)
-        {
-            va_list vargs;
-            va_start(vargs, fmt);
-            resize(vsnprintf((char*)data(), size(), fmt, vargs));
-            va_end(vargs);
-        }
-    };
+class AVFilterArgs : public std::string {
+public:
+    AVFilterArgs(const char* fmt, ...)
+        : std::string(1024, 0)
+    {
+        va_list vargs;
+        va_start(vargs, fmt);
+        resize(vsnprintf((char*)data(), size(), fmt, vargs));
+        va_end(vargs);
+    }
+};
 
-    class AVFilterChain {
-    public:
-        std::string name;
-        std::string args;
-        AVFilterChain() = default;
-        AVFilterChain(std::string name, AVFilterArgs args)
-            : name(name)
-            , args(args)
-        {
-        }
-
-        ::AVFilterContext* create_filter(::AVFilterContext* source, ::AVFilterGraph* graph) const
-        {
-            ::AVFilterContext* sink = nullptr;
-            auto err = ::avfilter_graph_create_filter(&sink, avfilter_get_by_name(name.c_str()), nullptr, args.c_str(), nullptr, graph);
-            err = ::avfilter_link(source, 0, sink, 0);
-            return sink;
-        }
-    };
-
-    ::AVFilterContext* sink = nullptr;
-    ::AVFilterContext* source = nullptr;
-    AVFilterGraph()
-        : AVFilterGraphBase(nullptr, [](::AVFilterGraph*) {})
+class AVFilterChain {
+public:
+    std::string name;
+    std::string args;
+    AVFilterChain() = default;
+    AVFilterChain(std::string name, AVFilterArgs args)
+        : name(name)
+        , args(args)
     {
     }
 
-    AVFilterGraph(AVFormatContext& fmtCtx, int stream, const std::vector<AVFilterChain>& chain)
-        : AVFilterGraphBase(::avfilter_graph_alloc(), [](::AVFilterGraph* p) { avfilter_graph_free(&p); })
+    ::AVFilterContext* create_filter(::AVFilterContext* source, ::AVFilterGraph* graph) const
     {
-        auto& codecpar = fmtCtx->streams[stream]->codecpar;
-        AVFilterChain buffer("buffer",
-            { "video_size=%dx%d:pix_fmt=%d:time_base=%ld/%ld:pixel_aspect=%d/%d",
-                codecpar->width, codecpar->height, codecpar->format,
-                flicks::period::num, flicks::period::den,
-                codecpar->sample_aspect_ratio.num, codecpar->sample_aspect_ratio.den });
-
-        ::avfilter_graph_create_filter(&source, avfilter_get_by_name(buffer.name.c_str()), nullptr, buffer.args.c_str(), nullptr, get());
-        auto _source = source;
-        for (const auto& link : chain) {
-            _source = link.create_filter(_source, get());
-        }
-
-        // Create sink
-        enum AVPixelFormat pix_fmts[] = { (AVPixelFormat)codecpar->format, AV_PIX_FMT_NONE };
-        AVBufferSinkParams* buffersink_params = av_buffersink_params_alloc();
-        buffersink_params->pixel_fmts = pix_fmts;
-        auto err = avfilter_graph_create_filter(&sink, avfilter_get_by_name("buffersink"), nullptr, nullptr, buffersink_params, get());
-        err = ::avfilter_link(_source, 0, sink, 0);
-        ::av_free(buffersink_params);
-        err = ::avfilter_graph_config(get(), nullptr);
+        ::AVFilterContext* sink = nullptr;
+        auto err = ::avfilter_graph_create_filter(&sink, avfilter_get_by_name(name.c_str()), nullptr, args.c_str(), nullptr, graph);
+        err = ::avfilter_link(source, 0, sink, 0);
+        return sink;
     }
+};
+
+::AVFilterContext* sink = nullptr;
+::AVFilterContext* source = nullptr;
+AVFilterGraph()
+    : AVFilterGraphBase(nullptr, [](::AVFilterGraph*) {})
+{
+}
+
+AVFilterGraph(AVFormatContext& fmtCtx, int stream, const std::vector<AVFilterChain>& chain)
+    : AVFilterGraphBase(::avfilter_graph_alloc(), [](::AVFilterGraph* p) { avfilter_graph_free(&p); })
+{
+    auto& codecpar = fmtCtx->streams[stream]->codecpar;
+    AVFilterChain buffer("buffer",
+        { "video_size=%dx%d:pix_fmt=%d:time_base=%ld/%ld:pixel_aspect=%d/%d",
+            codecpar->width, codecpar->height, codecpar->format,
+            flicks::period::num, flicks::period::den,
+            codecpar->sample_aspect_ratio.num, codecpar->sample_aspect_ratio.den });
+
+    ::avfilter_graph_create_filter(&source, avfilter_get_by_name(buffer.name.c_str()), nullptr, buffer.args.c_str(), nullptr, get());
+    auto _source = source;
+    for (const auto& link : chain) {
+        _source = link.create_filter(_source, get());
+    }
+
+    // Create sink
+    enum AVPixelFormat pix_fmts[] = { (AVPixelFormat)codecpar->format, AV_PIX_FMT_NONE };
+    AVBufferSinkParams* buffersink_params = av_buffersink_params_alloc();
+    buffersink_params->pixel_fmts = pix_fmts;
+    auto err = avfilter_graph_create_filter(&sink, avfilter_get_by_name("buffersink"), nullptr, nullptr, buffersink_params, get());
+    err = ::avfilter_link(_source, 0, sink, 0);
+    ::av_free(buffersink_params);
+    err = ::avfilter_graph_config(get(), nullptr);
+}
 };
 */
 /*
 inline int avfilter_graph_write_frame(AVFilterGraph& graph, AVFrame& frame, std::function<void(AVFrame&)> onFrame)
 {
-    int err = 0;
-    if ((err = ::av_buffersrc_write_frame(graph.source, frame.get())) < 0) {
-        return err;
+int err = 0;
+if ((err = ::av_buffersrc_write_frame(graph.source, frame.get())) < 0) {
+    return err;
+}
+
+for (;;) {
+    auto newFrame = av_frame_alloc();
+    if (::av_buffersink_get_frame(graph.sink, newFrame.get()) < 0) {
+        break;
     }
 
-    for (;;) {
-        auto newFrame = av_frame_alloc();
-        if (::av_buffersink_get_frame(graph.sink, newFrame.get()) < 0) {
-            break;
-        }
+    onFrame(newFrame);
+}
 
-        onFrame(newFrame);
-    }
-
-    return err == AVERROR(EAGAIN) ? 0 : err;
+return err == AVERROR(EAGAIN) ? 0 : err;
 }
 */
 
@@ -688,9 +767,9 @@ inline AVCodecContext make_encode_context(AVFormatContext& media,const std::stri
         std::cout << "Could not find codec by name" << std::endl;
     }
     auto codecCtx = AVCodecContext(::avcodec_alloc_context3(codec),
-        [](::AVCodecContext* c) {
-            ::avcodec_free_context(&c);
-        });
+                                   [](::AVCodecContext* c) {
+                                       ::avcodec_free_context(&c);
+                                   });
 
     //https://stackoverflow.com/questions/46444474/c-ffmpeg-create-mp4-file
     ::AVStream* videoStream = ::avformat_new_stream(media.get(),codec);
@@ -701,7 +780,7 @@ inline AVCodecContext make_encode_context(AVFormatContext& media,const std::stri
     videoStream->codecpar->height = height;
     videoStream->codecpar->format = pix_fmt;
     //videoStream->codecpar->bit_rate = 2000 * 1000; // setting this really ****s it up
-    
+
     ::avcodec_parameters_to_context(codecCtx.get(),videoStream->codecpar);
 
     codecCtx->time_base = ::AVRational({1,fps});
@@ -731,8 +810,8 @@ inline AVCodecContext DLLOPT make_encode_context_nvenc(AVFormatContext& media,in
 /*
 inline AVCodecContext make_encode_context_h264(AVFormatContext& media,int width, int height, int fps) 
 {
-    //This should call with a different context name and pixel format. Otherwise Okay I think.
-    return make_encode_context(media,"h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
+//This should call with a different context name and pixel format. Otherwise Okay I think.
+return make_encode_context(media,"h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
 }
 */
 inline void bind_hardware_frames_context(AVCodecContext& ctx, int width, int height, ::AVPixelFormat hw_pix_fmt,::AVPixelFormat sw_pix_fmt)
@@ -760,7 +839,7 @@ inline void bind_hardware_frames_context(AVCodecContext& ctx, int width, int hei
     ::av_buffer_unref(&hw_frames_ref);
 }
 
-inline void DLLOPT open_encode_stream_to_write(AVFormatContext& media,std::string file_name) 
+inline void DLLOPT open_encode_stream_to_write(AVFormatContext& media,std::string file_name)
 {
     ::avio_open(&media->pb, file_name.c_str(), AVIO_FLAG_WRITE);
 
@@ -769,7 +848,7 @@ inline void DLLOPT open_encode_stream_to_write(AVFormatContext& media,std::strin
 
 inline void DLLOPT bind_hardware_frames_context_nvenc(AVCodecContext& ctx, int width, int height, ::AVPixelFormat sw_pix_fmt)
 {
-     bind_hardware_frames_context(ctx, width, height, AV_PIX_FMT_CUDA,sw_pix_fmt);
+    bind_hardware_frames_context(ctx, width, height, AV_PIX_FMT_CUDA,sw_pix_fmt);
 }
 
 /*
@@ -794,7 +873,7 @@ inline int DLLOPT hardware_encode_flush(AVFormatContext& media,AVCodecContext& c
         //std::cout << "End flush complete at frame " << frame_count << std::endl;
         return 0;
     }
-    
+
     auto& track = media->streams[0];
 
     //https://stackoverflow.com/questions/54491521/can-i-use-av-write-frame-instead-of-av-interleaved-write-frame
@@ -804,7 +883,7 @@ inline int DLLOPT hardware_encode_flush(AVFormatContext& media,AVCodecContext& c
 
     // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
     const int64_t duration = 2000;
-    pkt->pts = static_cast<int64_t>(frame_count) * duration; 
+    pkt->pts = static_cast<int64_t>(frame_count) * duration;
     pkt->dts = pkt->pts;
     pkt->duration = duration;
 
@@ -852,7 +931,7 @@ inline int DLLOPT hardware_encode(AVFormatContext& media,AVCodecContext& ctx, AV
 
     // I'm getting this duration from some kind of lookup table for that particular fps. I should be able to set it in ffmpeg somehow.
     const int64_t duration = 2000;
-    pkt->pts = static_cast<int64_t>(frame_count) * duration; 
+    pkt->pts = static_cast<int64_t>(frame_count) * duration;
     pkt->dts = pkt->pts;
     pkt->duration = duration;
 
