@@ -86,7 +86,7 @@ jobs:
         if: matrix.compiler == 'clang' && runner.os == 'Linux'
         run: |
           mkdir -p analysis
-          clang-tidy -p build > analysis/clang-tidy.log
+          clang-tidy -p /home/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/out/build/Clang/Release > analysis/clang-tidy.log
 
       - name: Upload clang-tidy analysis
         if: matrix.compiler == 'clang' && runner.os == 'Linux'
