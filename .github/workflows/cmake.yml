@@ -29,85 +29,98 @@ jobs:
         shell: '${{ matrix.shell }} {0}'
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - uses: seanmiddleditch/gha-setup-ninja@master
+      - uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Setup vcpkg
-      uses: lukka/run-vcpkg@v11
-      if: runner.os == 'macOS'
-      with:
-        vcpkgGitCommitId: 'f7423ee180c4b7f40d43402c2feb3859161ef625'
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        if: runner.os == 'macOS'
+        with:
+          vcpkgGitCommitId: 'f7423ee180c4b7f40d43402c2feb3859161ef625'
 
-    - name: Set up Homebrew
-      id: set-up-homebrew
-      if: runner.os == 'macOS'
-      uses: Homebrew/actions/setup-homebrew@master
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        if: runner.os == 'macOS'
+        uses: Homebrew/actions/setup-homebrew@master
 
-    - uses: ilammy/msvc-dev-cmd@v1
-      if: runner.os == 'Windows' && matrix.compiler == 'msvc'
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows' && matrix.compiler == 'msvc'
 
-    - name: Export GitHub Actions cache environment variables
-      uses: actions/github-script@v7
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-    - name: Add clang and and gcc to windows runner
-      uses: msys2/setup-msys2@v2
-      if: runner.os == 'Windows' && matrix.shell == 'msys2'
-      with:
-        update: true
-        install: >-
-          base-devel
-          mingw-w64-x86_64-clang
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-cmake
-    
-    - name: "Set environmental variables"
-      if: runner.os == 'Linux' || runner.os == 'Windows'
-      shell: bash
-      run: |
-        echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
-        
-    - name: Install nasm on Linux
-      if: runner.os == 'Linux'
-      run: sudo apt-get install -y nasm
+      - name: Add clang and and gcc to windows runner
+        uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows' && matrix.shell == 'msys2'
+        with:
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-clang
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
 
-    - name: Install nasm on Mac
-      if: runner.os == 'macOS'
-      run: brew install nasm
+      - name: "Set environmental variables"
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
-    - name: Configure CMake
-      run: cmake --preset ${{matrix.short}}-${{matrix.compiler}}-release
+      - name: Install nasm on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y nasm
 
-    - name: Print error messages from build
-      if: runner.os == 'macOS' && failure()
-      run: |
-        cat /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-config.log
-        cat /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-err.log
+      - name: Install nasm on Mac
+        if: runner.os == 'macOS'
+        run: brew install nasm
 
-    - name: Build
-      run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
+      - name: Configure CMake
+        run: cmake --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
-    - name: Test
-      id: test
-      continue-on-error: true
-      run: |
-        ctest --verbose -LE "GPU_TEST" --preset ${{matrix.short}}-${{matrix.compiler}}-release -C ${{matrix.short}}-${{matrix.compiler}}-release 
-        echo "::set-output name=RESULT::$?"
-      working-directory: ${{ github.workspace }}
+      - name: Run clang-tidy analysis
+        if: matrix.compiler == 'clang' && runner.os == 'ubuntu-latest'
+        run: |
+          mkdir -p analysis
+          clang-tidy -p build > analysis/clang-tidy.log
 
-    - name: Install
-      id: install
-      continue-on-error: true
-      run: |
-        cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release --target install
-        echo "::set-output name=RESULT::$?"
+      - name: Upload clang-tidy analysis
+        if: matrix.compiler == 'clang' && runner.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: clang-tidy-analysis
+          path: analysis/clang-tidy.log
 
-    - name: Report Install Result
-      run: echo "Install step finished with exit code ${{ steps.install.outputs.RESULT }}"
+      - name: Print error messages from build
+        if: runner.os == 'macOS' && failure()
+        run: |
+          cat /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-config.log
+          cat /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-err.log
 
-    - name: Report Test Result
-      run: echo "Test step finished with exit code ${{ steps.test.outputs.RESULT }}"
+      - name: Build
+        run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
+
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: |
+          ctest --verbose -LE "GPU_TEST" --preset ${{matrix.short}}-${{matrix.compiler}}-release -C ${{matrix.short}}-${{matrix.compiler}}-release
+          echo "::set-output name=RESULT::$?"
+        working-directory: ${{ github.workspace }}
+
+      - name: Install
+        id: install
+        continue-on-error: true
+        run: |
+          cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release --target install
+          echo "::set-output name=RESULT::$?"
+
+      - name: Report Install Result
+        run: echo "Install step finished with exit code ${{ steps.install.outputs.RESULT }}"
+
+      - name: Report Test Result
+        run: echo "Test step finished with exit code ${{ steps.test.outputs.RESULT }}"
