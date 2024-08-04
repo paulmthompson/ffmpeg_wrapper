@@ -82,18 +82,19 @@ jobs:
       - name: Configure CMake
         run: cmake --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
-      - name: Run clang-tidy analysis
+      - name: Run Codechecker
         if: matrix.compiler == 'clang' && runner.os == 'Linux'
-        run: |
-          mkdir -p analysis
-          clang-tidy -p /home/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/out/build/Clang/Release > analysis/clang-tidy.log
+        uses: whisperity/codechecker-analysis-action@v1
+        id: codechecker
+        with:
+          logfile: /home/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/out/build/Clang/Release/compile_commands.json
 
-      - name: Upload clang-tidy analysis
+      - name: Upload codechecker analysis
         if: matrix.compiler == 'clang' && runner.os == 'Linux'
         uses: actions/upload-artifact@v3
         with:
-          name: clang-tidy-analysis
-          path: analysis/clang-tidy.log
+          name: "CodeChecker Bug Reports"
+          path: ${{ steps.codechecker.outputs.result-html-dir }}
 
       - name: Print error messages from build
         if: runner.os == 'macOS' && failure()
