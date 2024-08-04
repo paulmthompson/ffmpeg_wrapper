@@ -31,6 +31,8 @@ with this particular project
 
 set(VCPKG_MANIFEST_MODE ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 #=============================

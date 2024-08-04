@@ -80,7 +80,7 @@ jobs:
         run: brew install nasm
 
       - name: Configure CMake
-        run: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --preset ${{matrix.short}}-${{matrix.compiler}}-release
+        run: cmake --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
       - name: Run clang-tidy analysis
         if: matrix.compiler == 'clang' && runner.os == 'Linux'
