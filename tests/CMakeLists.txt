@@ -26,3 +26,5 @@ Then we can test an out-of-source build, meaning that ffmpeg_wrapper source code
 add_subdirectory(video-encoder-tests)
 
 add_subdirectory(video-decoder-tests)
+
+add_subdirectory(libavinc-tests)
