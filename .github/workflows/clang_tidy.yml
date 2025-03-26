@@ -1,0 +1,67 @@
+name: Clang-Tidy Check
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comparison
+
+      - name: Common Setup
+        uses: ./.github/actions/linux-setup
+        with:
+          compiler: clang
+
+      - name: Configure CMake without coverage
+        run: cmake --preset linux-clang-release
+
+      - name: Run clang-tidy
+        run: |
+          echo "Running clang-tidy checks..."
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.(cpp|hpp|c|h)$' || true)
+          else
+            FILES=$(git diff --name-only --diff-filter=ACMRT HEAD~1 HEAD | grep -E '\.(cpp|hpp|c|h)$' || true)
+          fi
+          
+          if [ -z "$FILES" ]; then
+            echo "No C/C++ files to check"
+            exit 0
+          fi
+          
+          echo "Checking files:"
+          echo "$FILES"
+          
+          TIDY_ISSUES=0
+          for file in $FILES; do
+            if [ -f "$file" ]; then
+              echo "Checking $file"
+              clang-tidy -p out/build/Clang/Release "$file" 2>&1 | tee /tmp/clang-tidy-output
+              if grep -q "error:" /tmp/clang-tidy-output; then
+                echo "::error file=$file::Clang-Tidy found issues in $file"
+                TIDY_ISSUES=1
+              fi
+            else
+              echo "File $file not found, skipping"
+            fi
+          done
+          
+          if [ "$TIDY_ISSUES" -eq 1 ]; then
+            echo "Some files have clang-tidy issues. Please fix them locally."
+            exit 1
+          fi
+          
+          echo "All files passed clang-tidy checks!"
