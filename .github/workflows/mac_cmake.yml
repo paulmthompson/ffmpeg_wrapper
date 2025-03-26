@@ -1,4 +1,4 @@
-name: CMake
+name: MacOS Build
 
 on:
   push:
@@ -11,11 +11,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - {"os": ubuntu-latest, short: linux, compiler: gcc, shell: bash}
-          - {"os": ubuntu-latest, short: linux, compiler: clang, shell: bash}
-          #- {"os": windows-latest, short: windows, compiler: gcc, shell: msys2}
-          - {"os": windows-latest, short: windows, compiler: clang, shell: msys2}
-          - {"os": windows-latest, short: windows, compiler: msvc, shell: powershell}
+          - {"os": macos-13, short: mac-amd64, compiler: clang, shell: bash}
+          - {"os": macos-latest, short: mac-arm64, compiler: clang, shell: bash}
 
     runs-on: ${{matrix.os}}
 
@@ -31,8 +28,14 @@ jobs:
 
       - uses: seanmiddleditch/gha-setup-ninja@master
 
-      - uses: ilammy/msvc-dev-cmd@v1
-        if: runner.os == 'Windows' && matrix.compiler == 'msvc'
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'f7423ee180c4b7f40d43402c2feb3859161ef625'
+
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@master
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v7
@@ -41,43 +44,17 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Add clang and and gcc to windows runner
-        uses: msys2/setup-msys2@v2
-        if: runner.os == 'Windows' && matrix.shell == 'msys2'
-        with:
-          update: true
-          install: >-
-            base-devel
-            mingw-w64-x86_64-clang
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-
-      - name: "Set environmental variables"
-        if: runner.os == 'Linux' || runner.os == 'Windows'
-        shell: bash
-        run: |
-          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
-
-      - name: Install nasm on Linux
-        if: runner.os == 'Linux'
-        run: sudo apt-get install -y nasm
+      - name: Install nasm on Mac
+        run: brew install nasm
 
       - name: Configure CMake
         run: cmake --preset ${{matrix.short}}-${{matrix.compiler}}-release
 
-      - name: Run Codechecker
-        if: matrix.compiler == 'clang' && runner.os == 'Linux'
-        uses: whisperity/codechecker-analysis-action@v1
-        id: codechecker
-        with:
-          logfile: /home/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/out/build/Clang/Release/compile_commands.json
-
-      - name: Upload codechecker analysis
-        if: matrix.compiler == 'clang' && runner.os == 'Linux'
-        uses: actions/upload-artifact@v3
-        with:
-          name: "CodeChecker Bug Reports"
-          path: ${{ steps.codechecker.outputs.result-html-dir }}
+      - name: Print error messages from build
+        if: failure()
+        run: |
+          cat /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-config.log
+          cat /Users/runner/work/ffmpeg_wrapper/ffmpeg_wrapper/vcpkg/buildtrees/ffmpeg/build-x64-osx-dynamic-rel-err.log
 
       - name: Build
         run: cmake --build --preset ${{matrix.short}}-${{matrix.compiler}}-release
