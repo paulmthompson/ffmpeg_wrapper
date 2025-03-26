@@ -28,7 +28,7 @@ struct FrameBufferElement {
 
 class FrameBuffer {
 public:
-    FrameBuffer();
+    FrameBuffer() = default;
     void buildFrameBuffer(int buf_size);
     void addFrametoBuffer(libav::AVFrame frame, int pos);
     bool isFrameInBuffer(int frame);

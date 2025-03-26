@@ -16,10 +16,6 @@
 
 namespace ffmpeg_wrapper {
 
-FrameBuffer::FrameBuffer() {
-
-};
-
 void FrameBuffer::buildFrameBuffer(int buf_size) {
 
     _frame_buf.clear();
