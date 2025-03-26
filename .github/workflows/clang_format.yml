@@ -1,0 +1,55 @@
+name: Clang-Format Check
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  clang-format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comparison
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check clang-format
+        run: |
+          echo "Checking files with clang-format..."
+          # For pull requests, check only changed files
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.(cpp|hpp|c|h)$' || true)
+          else
+            # For direct pushes to main, check the changed files in the recent commit(s)
+            FILES=$(git diff --name-only --diff-filter=ACMRT HEAD~1 HEAD | grep -E '\.(cpp|hpp|c|h)$' || true)
+          fi
+          
+          if [ -z "$FILES" ]; then
+            echo "No C/C++ files to check"
+            exit 0
+          fi
+          
+          echo "Checking format for files:"
+          echo "$FILES"
+          
+          for file in $FILES; do
+            clang-format -style=file -n -Werror "$file"
+            if [ $? -ne 0 ]; then
+              echo "::error file=$file::Formatting issues found in $file"
+              FORMATTING_ISSUES=1
+            fi
+          done
+          
+          if [ -n "$FORMATTING_ISSUES" ]; then
+            echo "Some files have formatting issues. Run clang-format locally to fix them."
+            exit 1
+          fi
+          
+          echo "All files are formatted correctly!"
