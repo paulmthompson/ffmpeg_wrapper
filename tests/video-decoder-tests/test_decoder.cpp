@@ -30,6 +30,14 @@ size_t calculate_pixel_difference(const std::vector<uint8_t>& original, const st
     size_t diff_count = 0;
     for(size_t i = 0; i < original.size(); ++i) {
         if(std::abs(original[i] - decoded[i]) > tolerance) {
+            std::cout 
+            << "Difference at index " 
+            << i 
+            << ": " 
+            << static_cast<int>(original[i]) 
+            << " vs " 
+            << static_cast<int>(decoded[i]) 
+            << std::endl;
             ++diff_count;
         }
     }
