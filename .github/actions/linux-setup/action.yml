@@ -22,4 +22,5 @@ runs:
         echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
     - name: Install nasm on Linux
+      shell: bash
       run: sudo apt-get install -y nasm
