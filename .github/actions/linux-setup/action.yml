@@ -1,0 +1,28 @@
+name: 'Linux Setup'
+description: 'Setup common dependencies and environment for CI'
+inputs:
+  buildfolder:
+    description: 'Build folder path'
+    required: true
+  compiler:
+    description: 'Compiler to use'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Export GitHub Actions cache environment variables
+      uses: actions/github-script@v7
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+    - name: "Set environmental variables"
+      shell: bash
+      run: |
+        echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
+
+    - name: Install nasm on Linux
+      run: sudo apt-get install -y nasm
