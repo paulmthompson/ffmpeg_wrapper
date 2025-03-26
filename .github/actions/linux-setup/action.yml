@@ -1,9 +1,6 @@
 name: 'Linux Setup'
 description: 'Setup common dependencies and environment for CI'
 inputs:
-  buildfolder:
-    description: 'Build folder path'
-    required: true
   compiler:
     description: 'Compiler to use'
     required: true
