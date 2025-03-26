@@ -8,7 +8,7 @@
 #include "libavutil/pixfmt.h"
 
 #include <chrono>
-#include <cstring> //memcpy
+#include <cstring>//memcpy
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -20,7 +20,6 @@
 namespace ffmpeg_wrapper {
 
 VideoEncoder::VideoEncoder() {
-
 }
 
 VideoEncoder::VideoEncoder(int width, int height, int fps) {
@@ -44,25 +43,25 @@ void VideoEncoder::createContext(int width, int height, int fps) {
     _fps = fps;
 
     std::string full_path = _file_path + _file_name;
-    auto mymedia = libav::avformat_open_output(full_path,"mp4");
+    auto mymedia = libav::avformat_open_output(full_path, "mp4");
     _media = std::move(mymedia);
 
     //If hardware
     if (_hardware_encode) {
         auto mycodecCtx = libav::make_encode_context_nvenc(_media, _width, _height, _fps);
         _codecCtx = std::move(mycodecCtx);
-    }  else {
+    } else {
         //If software - TODO
         std::cout << "Software encoding not supported at this time" << std::endl;
     }
 
-    _frame_count = 0; //Reset frame count to zero
+    _frame_count = 0;//Reset frame count to zero
 }
 
 //If we want to hardware encode, we need to bind the hardware context
 //If not, we need to just make sure that we create any frames necessary for intermediate data receiving.
 void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
-    
+
     _frame = libav::av_frame_alloc();
     _frame->width = _width;
     _frame->height = _height;
@@ -90,7 +89,6 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
     ::av_frame_get_buffer(_frame_nv12.get(), 32);
 
     ::av_frame_get_buffer(_frame.get(), 32);
-
 }
 
 void VideoEncoder::openFile() {
@@ -105,7 +103,7 @@ void VideoEncoder::closeFile() {
     ::avio_closep(&_media->pb);
 }
 
-int VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
+int VideoEncoder::writeFrameGray8(std::vector<uint8_t> & input_data) {
 
     int write_frame_err;
     if (!_flush_state) {
@@ -133,7 +131,7 @@ int VideoEncoder::writeFrameGray8(std::vector<uint8_t>& input_data) {
     return write_frame_err;
 }
 
-void VideoEncoder::writeFrameRGB0(std::vector<uint32_t>& input_data) {
+void VideoEncoder::writeFrameRGB0(std::vector<uint32_t> & input_data) {
 
     ::av_frame_make_writable(_frame.get());
     memcpy(_frame->data[0], input_data.data(), _height * _width * sizeof(uint32_t));
@@ -146,6 +144,4 @@ void VideoEncoder::writeFrameRGB0(std::vector<uint32_t>& input_data) {
 }
 
 
-}
-
-
+}// namespace ffmpeg_wrapper
