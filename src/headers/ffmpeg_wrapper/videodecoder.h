@@ -14,9 +14,9 @@
 #include <vector>
 
 #if defined _WIN32 || defined __CYGWIN__
-	#define DLLOPT __declspec(dllexport)
+#define DLLOPT __declspec(dllexport)
 #else
-	#define DLLOPT __attribute__((visibility("default")))
+#define DLLOPT __attribute__((visibility("default")))
 #endif
 
 namespace ffmpeg_wrapper {
@@ -41,17 +41,16 @@ public:
 
 private:
     boost::circular_buffer<FrameBufferElement> _frame_buf;
-    bool _enable {true};
-    bool _verbose {false};
-
+    bool _enable{true};
+    bool _verbose{false};
 };
 
 class DLLOPT VideoDecoder {
 
 public:
     VideoDecoder();
-    VideoDecoder(const std::string& filename);
-    void createMedia(const std::string& filename);
+    VideoDecoder(std::string const & filename);
+    void createMedia(std::string const & filename);
 
     /*!
     *
@@ -62,12 +61,12 @@ public:
     * rather than seeking to the next keyframe.
     * @return Image corresponding to the decoded desired_frame
     */
-    std::vector<uint8_t> getFrame(const int frame_id, bool isFrameByFrameMode = false);
+    std::vector<uint8_t> getFrame(int const frame_id, bool isFrameByFrameMode = false);
 
-    int getFrameCount() const {return _frame_count;}
-    int getWidth() const {return _width;}
-    int getHeight() const {return _height;}
-    std::vector<int64_t> getKeyFrames() const {return _i_frames;}
+    int getFrameCount() const { return _frame_count; }
+    int getWidth() const { return _width; }
+    int getHeight() const { return _height; }
+    std::vector<int64_t> getKeyFrames() const { return _i_frames; }
 
     /**
      *
@@ -84,8 +83,7 @@ public:
     }
 
 
-    enum OutputFormat
-    {
+    enum OutputFormat {
         Gray8,
         ARGB,
     };
@@ -95,24 +93,24 @@ public:
     }
 
 private:
-    libav::AVFormatContext _media; //This is a unique_ptr
-    libav::AVPacket _pkt; //This is a unique ptr
+    libav::AVFormatContext _media;//This is a unique_ptr
+    libav::AVPacket _pkt;         //This is a unique ptr
 
-    int _frame_count {0};
-    long long _last_decoded_frame {0};
-    long long _last_key_frame {0};
+    int _frame_count{0};
+    long long _last_decoded_frame{0};
+    long long _last_key_frame{0};
     int _width;
     int _height;
     int _fps_num;
     int _fps_denom;
 
-    OutputFormat _format {OutputFormat::Gray8};
+    OutputFormat _format{OutputFormat::Gray8};
 
-    bool _verbose {false};
+    bool _verbose{false};
 
-    bool _last_packet_decoded {false};
+    bool _last_packet_decoded{false};
 
-    std::vector<uint64_t> _pts; // We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
+    std::vector<uint64_t> _pts;// We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
     std::vector<int64_t> _i_frames;
     std::vector<uint64_t> _pkt_durations;
 
@@ -120,21 +118,21 @@ private:
 
     std::unique_ptr<FrameBuffer> _frame_buf;
 
-    void _convertFrameToOutputFormat(::AVFrame* frame, std::vector<uint8_t>& output);
+    void _convertFrameToOutputFormat(::AVFrame * frame, std::vector<uint8_t> & output);
     int _getFormatBytes();
-    void _togray8(::AVFrame* frame, std::vector<uint8_t>& output);
-    void _torgb32(::AVFrame* frame, std::vector<uint8_t> &output);
+    void _togray8(::AVFrame * frame, std::vector<uint8_t> & output);
+    void _torgb32(::AVFrame * frame, std::vector<uint8_t> & output);
 
     int64_t _findFrameByPts(uint64_t pts);
 
-    uint64_t _getDuration() const {return _media->duration;} // This is in AV_TIME_BASE (1000000) fractional seconds
-    uint64_t _getStartTime() const {return _media->start_time;} // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t _getDuration() const { return _media->duration; }   // This is in AV_TIME_BASE (1000000) fractional seconds
+    uint64_t _getStartTime() const { return _media->start_time; }// This is in AV_TIME_BASE (1000000) fractional seconds
 
-    void _seekToFrame(const int frame, bool keyframe = false);
+    void _seekToFrame(int const frame, bool keyframe = false);
 };
 
-template <typename T>
-int find_buffer_size(std::vector<T>& vec);
-}
+template<typename T>
+int find_buffer_size(std::vector<T> & vec);
+}// namespace ffmpeg_wrapper
 
-#endif // VIDEODECODER_H
+#endif// VIDEODECODER_H

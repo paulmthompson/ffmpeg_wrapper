@@ -43,8 +43,7 @@ void FrameBuffer::addFrametoBuffer(libav::AVFrame frame, int pos) {
 bool FrameBuffer::isFrameInBuffer(int frame) {
     auto element = std::find_if(
             _frame_buf.begin(), _frame_buf.end(),
-            [&frame](const FrameBufferElement& x){return x.frame_id == frame;}
-    );
+            [&frame](FrameBufferElement const & x) { return x.frame_id == frame; });
     if (element == _frame_buf.end()) {
         return false;
     } else {
@@ -55,8 +54,7 @@ bool FrameBuffer::isFrameInBuffer(int frame) {
 libav::AVFrame FrameBuffer::getFrameFromBuffer(int frame) {
     auto element = std::find_if(
             _frame_buf.begin(), _frame_buf.end(),
-            [&frame](const FrameBufferElement& x){return x.frame_id == frame;}
-    );
+            [&frame](FrameBufferElement const & x) { return x.frame_id == frame; });
 
     return (*element).frame;
 }
@@ -68,7 +66,7 @@ VideoDecoder::VideoDecoder() {
     _frame_buf = std::make_unique<FrameBuffer>();
 }
 
-VideoDecoder::VideoDecoder(const std::string &filename) {
+VideoDecoder::VideoDecoder(std::string const & filename) {
     createMedia(filename);
 }
 
@@ -88,7 +86,7 @@ https://stackoverflow.com/questions/40275242/libav-ffmpeg-copying-decoded-video-
 
 */
 
-void VideoDecoder::createMedia(const std::string &filename) {
+void VideoDecoder::createMedia(std::string const & filename) {
 
     auto mymedia = libav::avformat_open_input(filename);
     _media = std::move(mymedia);
@@ -99,7 +97,7 @@ void VideoDecoder::createMedia(const std::string &filename) {
     Loop through and get the PTS values, which we will use to determine if we are at the correct frame or not in the future.
     */
     //seekToFrame(0,true);
-    for (auto &pkg: _media) {
+    for (auto & pkg: _media) {
         if (pkg.flags & AV_PKT_FLAG_KEY) {
             // this is I-frame. We may want to keep a list of these for fast scrolling.
             _i_frames.push_back((_frame_count));
@@ -138,7 +136,7 @@ void VideoDecoder::createMedia(const std::string &filename) {
         std::cout << "The second pts is " << _pts[1] << std::endl;
     }
 
-    auto &track = _media->streams[0];
+    auto & track = _media->streams[0];
 
     if (_verbose) {
         std::cout << "real_frame rate of stream " << track->r_frame_rate.num << " denom: " << track->r_frame_rate.den
@@ -172,11 +170,10 @@ void VideoDecoder::createMedia(const std::string &filename) {
     if (_verbose) {
         std::cout << "Buffer size set to " << largest_diff << std::endl;
     }
-
 }
 
 template<typename T>
-int find_buffer_size(std::vector<T> &vec) {
+int find_buffer_size(std::vector<T> & vec) {
 
     int largest_diff = vec[1] - vec[0];
     for (int i = 2; i < vec.size(); i++) {
@@ -187,22 +184,21 @@ int find_buffer_size(std::vector<T> &vec) {
     return largest_diff;
 }
 
-std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFrameByFrameMode)
-{
+std::vector<uint8_t> VideoDecoder::getFrame(int const desired_frame, bool isFrameByFrameMode) {
     std::vector<uint8_t> output(_height * _width * _getFormatBytes());
 
-    const int64_t desired_frame_pts = _pts[desired_frame];
+    int64_t const desired_frame_pts = _pts[desired_frame];
 
     if (_frame_buf->isFrameInBuffer(desired_frame)) {
         auto frame = _frame_buf->getFrameFromBuffer(desired_frame);
-        _convertFrameToOutputFormat(frame.get(), output); // Convert the frame to format to render
+        _convertFrameToOutputFormat(frame.get(), output);// Convert the frame to format to render
         return output;
     }
 
     bool seek_flag = false;
-    const int64_t desired_nearest_iframe = nearest_iframe(desired_frame);
+    int64_t const desired_nearest_iframe = nearest_iframe(desired_frame);
     auto distance_to_next_iframe = desired_nearest_iframe - _findFrameByPts(_pkt.get()->pts);
-    if (desired_frame < _findFrameByPts(_pkt.get()->pts) ||  distance_to_next_iframe > 10) {
+    if (desired_frame < _findFrameByPts(_pkt.get()->pts) || distance_to_next_iframe > 10) {
         _seekToFrame(desired_nearest_iframe, desired_frame == desired_nearest_iframe);
         seek_flag = true;
     }
@@ -226,7 +222,6 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
         auto frame_pts = _pkt.get()->pts;
 
         auto err = libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
-
             _frame_buf->addFrametoBuffer(frame, _findFrameByPts(_pkt.get()->pts));
             is_packet_decoded = true;
             if (frame.get()->pts == desired_frame_pts) {
@@ -250,22 +245,20 @@ std::vector<uint8_t> VideoDecoder::getFrame(const int desired_frame, bool isFram
     return output;
 }
 
-void VideoDecoder::_convertFrameToOutputFormat(::AVFrame* frame, std::vector<uint8_t>& output)
-{
+void VideoDecoder::_convertFrameToOutputFormat(::AVFrame * frame, std::vector<uint8_t> & output) {
     switch (_format) {
         case OutputFormat::Gray8:
             _togray8(frame, output);
             break;
         case OutputFormat::ARGB:
-            _torgb32(frame,output);
+            _torgb32(frame, output);
             break;
         default:
             std::cout << "Output not supported" << std::endl;
     }
 }
 
-int VideoDecoder::_getFormatBytes()
-{
+int VideoDecoder::_getFormatBytes() {
     switch (_format) {
         case OutputFormat::Gray8:
             return 1;
@@ -276,7 +269,7 @@ int VideoDecoder::_getFormatBytes()
     }
 }
 
-void VideoDecoder::_togray8(::AVFrame* frame, std::vector<uint8_t> &output) {
+void VideoDecoder::_togray8(::AVFrame * frame, std::vector<uint8_t> & output) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
     std::memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
@@ -289,7 +282,7 @@ void VideoDecoder::_togray8(::AVFrame* frame, std::vector<uint8_t> &output) {
     }
 }
 
-void VideoDecoder::_torgb32(::AVFrame* frame, std::vector<uint8_t> &output) {
+void VideoDecoder::_torgb32(::AVFrame * frame, std::vector<uint8_t> & output) {
 
     auto t1 = std::chrono::high_resolution_clock::now();
     auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_RGBA);
@@ -317,7 +310,7 @@ int64_t VideoDecoder::nearest_iframe(int64_t frame_id) {
     return nearest_i_frame;
 }
 
-void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
+void VideoDecoder::_seekToFrame(int const frame, bool keyframe) {
 
     //https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html
     //stream_index	If stream_index is (-1), a default stream is selected, and timestamp is automatically converted from AV_TIME_BASE units to the stream specific time_base.
@@ -345,7 +338,7 @@ void VideoDecoder::_seekToFrame(const int frame, bool keyframe) {
         libav::av_seek_frame(_media, time2, -1, AVSEEK_FLAG_BACKWARD);
 
         _pkt = std::move(
-                _media.begin()); // After we seek to a frame, this will read frame, followed by rescaling to appropriate time scale.
+                _media.begin());// After we seek to a frame, this will read frame, followed by rescaling to appropriate time scale.
 
         if (_verbose) {
             if (_pkt.get()->flags & AV_PKT_FLAG_KEY) {
@@ -403,4 +396,4 @@ int64_t VideoDecoder::_findFrameByPts(uint64_t pts)
     return matching_frame;
 }
 
-}
+}// namespace ffmpeg_wrapper
