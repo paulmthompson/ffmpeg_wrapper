@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload codechecker analysis
         if: matrix.compiler == 'clang' && runner.os == 'Linux'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "CodeChecker Bug Reports"
           path: ${{ steps.codechecker.outputs.result-html-dir }}
