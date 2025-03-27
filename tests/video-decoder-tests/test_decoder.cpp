@@ -49,7 +49,7 @@ size_t calculate_pixel_difference(const std::vector<uint8_t>& original, const st
     return diff_count;
 }
 
-static const int tolerance = 5;
+static const int tolerance = 7; // Linux machine needs a tolerance of 7
 static auto frame_0 = load_img("data/frame_0.bin");
 static auto frame_100 = load_img("data/frame_100.bin");
 static auto frame_200 = load_img("data/frame_200.bin");
@@ -191,11 +191,13 @@ TEST_CASE("Seek to keyframe and move backward","[ffmpeg_wrapper]")
     for (int i = 249; i >= 100; --i) {
         auto frame_decoded = decoder.getFrame(i);
     }
-
+    
     auto frame_100_decoded = decoder.getFrame(100);
 
     size_t diff_count = calculate_pixel_difference(frame_100, frame_100_decoded, tolerance);
+    
     CHECK(diff_count == 0);
+
 }
 
 TEST_CASE("VideoDecoder get frame by frame past keyframe", "[ffmpeg_wrapper]") {

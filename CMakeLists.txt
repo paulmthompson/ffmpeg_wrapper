@@ -20,6 +20,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(enableAddressSanitizer "Enable Address Sanitizer" ON)
+
 include(set_rpath)
 include(enable_sanitizers)
 include(iwyu)

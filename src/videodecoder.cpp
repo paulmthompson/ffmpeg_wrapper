@@ -93,6 +93,7 @@ void VideoDecoder::createMedia(std::string const & filename) {
     Loop through and get the PTS values, which we will use to determine if we are at the correct frame or not in the future.
     */
     //seekToFrame(0,true);
+    
     for (auto & pkg: _media) {
         if (pkg.flags & AV_PKT_FLAG_KEY) {
             // this is I-frame. We may want to keep a list of these for fast scrolling.
@@ -103,8 +104,9 @@ void VideoDecoder::createMedia(std::string const & filename) {
         uint64_t pts = pkg.pts;
         _pts.push_back(pts);
         _pkt_durations.push_back(pkg.duration);
+        ::av_packet_unref(&pkg);
     }
-
+    
     _frame_count--;
     _height = _media->streams[0]->codecpar->height;
     _width = _media->streams[0]->codecpar->width;
@@ -201,6 +203,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(int const desired_frame, bool isFram
 
 
     if (desired_frame != _findFrameByPts(_pkt.get()->pts) && !seek_flag) {
+        ::av_packet_unref(_pkt.get());
         ++(_pkt);
     }
 
@@ -226,6 +229,7 @@ std::vector<uint8_t> VideoDecoder::getFrame(int const desired_frame, bool isFram
             }
         });
         if ((!is_packet_decoded) | (!is_frame_to_display)) {
+            ::av_packet_unref(_pkt.get());
             ++(_pkt);
         }
         frames_decoded++;

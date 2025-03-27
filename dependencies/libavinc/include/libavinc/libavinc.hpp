@@ -214,7 +214,7 @@ inline int DLLOPT av_read_frame(::AVFormatContext * ctx, ::AVPacket * pkt) {
         ::av_packet_rescale_ts(pkt, track->time_base, FLICKS_TIMESCALE_Q);
         // TODO check for pkt->size == 0 but not EOF
     } else {
-        pkt = ::av_packet_alloc();
+        //pkt = ::av_packet_alloc();
         pkt->size = 0;
         pkt->data = nullptr;
     }
@@ -224,12 +224,17 @@ inline int DLLOPT av_read_frame(::AVFormatContext * ctx, ::AVPacket * pkt) {
 
 
 // AVPacket is extended to enable ranged for loop
-using AVPacketBase = std::unique_ptr<::AVPacket, void (*)(::AVPacket *)>;
+struct PktDeleter {
+    void operator()(::AVPacket* pkt) { ::av_packet_free(&pkt); }
+};
+
+using AVPacketBase = std::unique_ptr<::AVPacket, PktDeleter>;
 class DLLOPT AVPacket : public AVPacketBase {
 private:
     ::AVFormatContext * _fmtCtx = nullptr;
 
     // From Video
+    /*
     void av_read_frame() {
         if (*this) {
             auto err = ::av_read_frame(_fmtCtx, get());
@@ -241,31 +246,40 @@ private:
             }
         }
     }
+    */
     // End From Video
 public:
     AVPacket()
-        : AVPacketBase(nullptr, [](::AVPacket *) {}),
+        : AVPacketBase(nullptr),
           _fmtCtx(nullptr) {
     }
 
     AVPacket(::AVFormatContext * fmtCtx)
-        //    : AVPacketBase(::av_packet_alloc(), [](::AVPacket* p) { ::av_packet_free(&p); }) Original Code
-        : AVPacketBase(::av_packet_alloc(), [](::AVPacket * pkt) {auto p = &pkt; ::av_packet_free(p); })// From Video
+        : AVPacketBase(::av_packet_alloc())
+       //     : AVPacketBase(::av_packet_alloc(), [](::AVPacket* p) {::av_packet_free(&p); }) //Original Code
+       // : AVPacketBase(::av_packet_alloc(), [](::AVPacket * pkt) {auto p = &pkt; ::av_packet_free(p); })// From Video
           ,
           _fmtCtx(fmtCtx) {
         libav::av_read_frame(fmtCtx, get());
     }
 
     AVPacket & operator++() {
+        
         if (!(*this)) {
             return *this;
         }
 
+        /*
         if (0 >= get()->size) {
             reset();
         } else {
             libav::av_read_frame(_fmtCtx, get());
         }
+        */
+       auto err = libav::av_read_frame(_fmtCtx, get());
+         if (0 > err) {
+              reset();
+         }
 
         return *this;
     }
