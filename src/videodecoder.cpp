@@ -88,12 +88,9 @@ void VideoDecoder::createMedia(std::string const & filename) {
     _media = std::move(mymedia);
     libav::av_open_best_streams(_media);
 
-
     /*
     Loop through and get the PTS values, which we will use to determine if we are at the correct frame or not in the future.
     */
-    //seekToFrame(0,true);
-
     for (auto & pkg: _media) {
         if (pkg.flags & AV_PKT_FLAG_KEY) {
             // this is I-frame. We may want to keep a list of these for fast scrolling.
@@ -110,18 +107,6 @@ void VideoDecoder::createMedia(std::string const & filename) {
     _frame_count--;
     _height = _media->streams[0]->codecpar->height;
     _width = _media->streams[0]->codecpar->width;
-
-    //pkt = std::move(media.begin());
-
-    /*
-    seekToFrame(0,true);
-
-    for (int i = 0; i < pts.size(); i++) {
-
-        pts[i] = pkt.get()->pts;
-        ++(pkt);
-    }
-    */
 
     _last_decoded_frame = _frame_count;
 
@@ -155,13 +140,6 @@ void VideoDecoder::createMedia(std::string const & filename) {
 
     _pkt = std::move(_media.begin());
     _seekToFrame(0);
-
-    /*
-    libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
-        // Use that decoded frame to set up the frame buffer properties
-        //frame_buf->buildFrameBuffer(largest_diff,frame);
-    });
-     */
 
     _frame_buf->buildFrameBuffer(largest_diff);
 
@@ -218,9 +196,8 @@ std::vector<uint8_t> VideoDecoder::getFrame(int const desired_frame, bool isFram
     while (!is_frame_to_display) {
 
         is_packet_decoded = false;
-        auto frame_pts = _pkt.get()->pts;
 
-        auto err = libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
+        libav::avcodec_send_packet(_media, _pkt.get(), [&](libav::AVFrame frame) {
             _frame_buf->addFrametoBuffer(frame, _findFrameByPts(_pkt.get()->pts));
             is_packet_decoded = true;
             if (frame.get()->pts == desired_frame_pts) {
