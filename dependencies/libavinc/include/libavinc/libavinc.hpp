@@ -225,7 +225,7 @@ inline int DLLOPT av_read_frame(::AVFormatContext * ctx, ::AVPacket * pkt) {
 
 // AVPacket is extended to enable ranged for loop
 struct PktDeleter {
-    void operator()(::AVPacket* pkt) { ::av_packet_free(&pkt); }
+    void operator()(::AVPacket * pkt) { ::av_packet_free(&pkt); }
 };
 
 using AVPacketBase = std::unique_ptr<::AVPacket, PktDeleter>;
@@ -256,15 +256,15 @@ public:
 
     AVPacket(::AVFormatContext * fmtCtx)
         : AVPacketBase(::av_packet_alloc())
-       //     : AVPacketBase(::av_packet_alloc(), [](::AVPacket* p) {::av_packet_free(&p); }) //Original Code
-       // : AVPacketBase(::av_packet_alloc(), [](::AVPacket * pkt) {auto p = &pkt; ::av_packet_free(p); })// From Video
+          //     : AVPacketBase(::av_packet_alloc(), [](::AVPacket* p) {::av_packet_free(&p); }) //Original Code
+          // : AVPacketBase(::av_packet_alloc(), [](::AVPacket * pkt) {auto p = &pkt; ::av_packet_free(p); })// From Video
           ,
           _fmtCtx(fmtCtx) {
         libav::av_read_frame(fmtCtx, get());
     }
 
     AVPacket & operator++() {
-        
+
         if (!(*this)) {
             return *this;
         }
@@ -276,10 +276,10 @@ public:
             libav::av_read_frame(_fmtCtx, get());
         }
         */
-       auto err = libav::av_read_frame(_fmtCtx, get());
-         if (0 > err) {
-              reset();
-         }
+        auto err = libav::av_read_frame(_fmtCtx, get());
+        if (0 > err) {
+            reset();
+        }
 
         return *this;
     }
