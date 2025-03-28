@@ -50,7 +50,7 @@ jobs:
             if [ -f "$file" ]; then
               echo "Checking $file"
               clang-tidy -p out/build/Clang/Release "$file" 2>&1 | tee /tmp/clang-tidy-output
-              if grep -q "error:" /tmp/clang-tidy-output; then
+              if grep -q "warning:" /tmp/clang-tidy-output; then
                 echo "::error file=$file::Clang-Tidy found issues in $file"
                 TIDY_ISSUES=1
               fi
