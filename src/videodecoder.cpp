@@ -104,7 +104,6 @@ void VideoDecoder::createMedia(std::string const & filename) {
         ::av_packet_unref(&pkg);
     }
 
-    _frame_count--;
     _height = _media->streams[0]->codecpar->height;
     _width = _media->streams[0]->codecpar->width;
 

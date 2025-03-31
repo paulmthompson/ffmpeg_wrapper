@@ -221,3 +221,11 @@ TEST_CASE("VideoDecoder get frame by frame past keyframe", "[ffmpeg_wrapper]") {
     CHECK(diff_count == 0);
 
 }
+
+TEST_CASE("VideoDecoder get frame count", "[ffmpeg_wrapper]") {
+
+    ffmpeg_wrapper::VideoDecoder decoder;
+    decoder.createMedia(video_filename);
+
+    CHECK(decoder.getFrameCount() == 1000);
+}
