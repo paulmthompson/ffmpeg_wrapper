@@ -500,11 +500,26 @@ inline AVFrame convert_frame(::AVFrame * frame, int width_out, int height_out, :
     return frame2;
 }
 
+
 inline void convert_frame(AVFrame & frame_in, AVFrame & frame_out) {
 
-    ::SwsContext * pContext = ::sws_getContext(frame_in->width, frame_in->height, (::AVPixelFormat) frame_in->format,
-                                               frame_out->width, frame_out->height,
-                                               (::AVPixelFormat) frame_out->format, (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR), nullptr, nullptr, nullptr);
+    // I originally used flags = (SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND | SWS_FAST_BILINEAR).
+    // I think this came from an old version of ffmpeg and was related to needing to select some
+    // particular kind of algorithm that had few artifacts when resizing didn't need to take place.
+    // However, it is significantly slower to use SWS_ACCURATE_RND, so I have discontinued and I do not believe
+    // There are drawbacks on the newer ffmpeg version.
+    // https://libav-user.ffmpeg.narkive.com/Ig2s0MJN/sws-scale-has-weird-behavior-when-not-resizing
+    ::SwsContext * pContext = ::sws_getContext(frame_in->width,
+                                               frame_in->height,
+                                               (::AVPixelFormat) frame_in->format,
+                                               frame_out->width,
+                                               frame_out->height,
+                                               (::AVPixelFormat) frame_out->format,
+                                               (SWS_FULL_CHR_H_INT | SWS_FAST_BILINEAR),
+                                               nullptr,
+                                               nullptr,
+                                               nullptr);
+
     sws_scale(pContext, frame_in->data, frame_in->linesize, 0, frame_in->height, frame_out->data, frame_out->linesize);
 
     sws_freeContext(pContext);
