@@ -868,8 +868,8 @@ inline int DLLOPT hardware_encode_flush(AVFormatContext & media, AVCodecContext 
 
 inline int DLLOPT hardware_encode(AVFormatContext & media, AVCodecContext & ctx, AVFrame & sw_frame, int frame_count) {
 
-    auto hw_frame = libav::av_frame_alloc();
-    auto err = ::av_hwframe_get_buffer(ctx->hw_frames_ctx, hw_frame.get(), 0);
+    auto * hw_frame = ::av_frame_alloc();
+    auto err = ::av_hwframe_get_buffer(ctx->hw_frames_ctx, hw_frame, 0);
     if (err) {
         std::cout << "Could not get hardware frame buffer";
     }
@@ -878,14 +878,14 @@ inline int DLLOPT hardware_encode(AVFormatContext & media, AVCodecContext & ctx,
     ::AVCodec const * codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
     ::avcodec_open2(ctx.get(), codec, NULL);// Why does this have to happen with every write?
 
-    err = ::av_hwframe_transfer_data(hw_frame.get(), sw_frame.get(), 0);
+    err = ::av_hwframe_transfer_data(hw_frame, sw_frame.get(), 0);
     if (err) {
         std::cout << "Error transferring data frame to surface";
     }
 
     auto pkt = av_packet_alloc();
 
-    ::avcodec_send_frame(ctx.get(), hw_frame.get());
+    ::avcodec_send_frame(ctx.get(), hw_frame);
 
     ::avcodec_receive_packet(ctx.get(), pkt.get());
 
@@ -909,6 +909,7 @@ inline int DLLOPT hardware_encode(AVFormatContext & media, AVCodecContext & ctx,
     }
 
     ::av_packet_unref(pkt.get());
+    ::av_frame_free(&hw_frame);
 
     return err;
 }
