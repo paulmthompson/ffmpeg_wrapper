@@ -245,31 +245,51 @@ int VideoDecoder::_getFormatBytes() {
     }
 }
 
-void VideoDecoder::_togray8(::AVFrame * frame, std::vector<uint8_t> & output) {
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
-    std::memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
-    auto t2 = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> elapsed = t2 - t1;
-
-    if (_verbose) {
-        std::cout << "Time for conversion was : " << elapsed.count() << std::endl;
+static inline void copy_plane(uint8_t * dst, int dst_stride,
+                              uint8_t const * src, int src_stride,
+                              int width_bytes, int height) {
+    if (src_stride == dst_stride && dst_stride == width_bytes) {
+        // Fast path: tightly packed, one memcpy
+        std::memcpy(dst, src, static_cast<size_t>(height) * width_bytes);
+        return;
+    }
+    for (int y = 0; y < height; ++y) {
+        std::memcpy(dst + y * dst_stride, src + y * src_stride, width_bytes);
     }
 }
 
-void VideoDecoder::_torgb32(::AVFrame * frame, std::vector<uint8_t> & output) {
+void VideoDecoder::_togray8(::AVFrame * frame, std::vector<uint8_t> & output) {
+    // Output is WxH, 1 byte per pixel
+    uint8_t * dst = output.data();
+    int const dst_stride = _width;// tightly packed GRAY8
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto frame2 = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_RGBA);
-    memcpy(output.data(), frame2->data[0], _height * _width * _getFormatBytes());
-    auto t2 = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> elapsed = t2 - t1;
-
-    if (_verbose) {
-        std::cout << "Time for conversion was : " << elapsed.count() << std::endl;
+    if (frame->format == AV_PIX_FMT_YUV420P) {
+        // Use the luma plane directly
+        uint8_t const * src = frame->data[0];
+        int const src_stride = std::abs(frame->linesize[0]);
+        copy_plane(dst, dst_stride, src, src_stride, _width /*bytes*/, _height);
+        return;
     }
+
+    // Fallback: convert to GRAY8 first, then copy respecting stride
+    auto gray = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_GRAY8);
+    uint8_t const * src = gray->data[0];
+    int const src_stride = std::abs(gray->linesize[0]);
+    copy_plane(dst, dst_stride, src, src_stride, _width /*bytes*/, _height);
+}
+
+void VideoDecoder::_torgb32(::AVFrame * frame, std::vector<uint8_t> & output) {
+    // Output is WxH, 4 bytes per pixel (RGBA)
+    auto rgba = libav::convert_frame(frame, _width, _height, AV_PIX_FMT_RGBA);
+
+    uint8_t * dst = output.data();
+    int const bpp = 4;
+    int const dst_stride = _width * bpp;
+
+    uint8_t const * src = rgba->data[0];
+    int const src_stride = std::abs(rgba->linesize[0]);
+
+    copy_plane(dst, dst_stride, src, src_stride, _width * bpp, _height);
 }
 
 int64_t VideoDecoder::nearest_iframe(int64_t frame_id) {
