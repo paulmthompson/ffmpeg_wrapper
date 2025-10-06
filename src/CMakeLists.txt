@@ -65,3 +65,10 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set_target_properties(ffmpeg_wrapper PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+#[[
+add_executable(check_last_frame tools/check_last_frame.cpp)
+target_link_libraries(check_last_frame PRIVATE ffmpeg_wrapper)
+set_target_properties(check_last_frame PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+        ]]#

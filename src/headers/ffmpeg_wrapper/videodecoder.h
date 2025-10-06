@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #if defined _WIN32 || defined __CYGWIN__
 #define DLLOPT __declspec(dllexport)
@@ -61,7 +62,7 @@ public:
     * rather than seeking to the next keyframe.
     * @return Image corresponding to the decoded desired_frame
     */
-    std::vector<uint8_t> getFrame(int const frame_id, bool isFrameByFrameMode = false);
+    std::vector<uint8_t> getFrame(int const desired_frame, bool isFrameByFrameMode = false);
 
     int getFrameCount() const { return _frame_count; }
     int getWidth() const { return _width; }
@@ -99,10 +100,10 @@ private:
     int _frame_count{0};
     long long _last_decoded_frame{0};
     long long _last_key_frame{0};
-    int _width;
-    int _height;
-    int _fps_num;
-    int _fps_denom;
+    int _width{0};
+    int _height{0};
+    int _fps_num{0};
+    int _fps_denom{0};
 
     OutputFormat _format{OutputFormat::Gray8};
 
@@ -111,6 +112,8 @@ private:
     bool _last_packet_decoded{false};
 
     std::vector<uint64_t> _pts;// We keep a vector of every pts value corresponding to each frame. in AVStream->time_base units;
+    // Fast lookup from pts -> index in _pts; helps avoid O(n) searches and issues with partially non-monotonic PTS.
+    std::unordered_map<uint64_t, int64_t> _pts_index;
     std::vector<int64_t> _i_frames;
     std::vector<uint64_t> _pkt_durations;
 
@@ -118,10 +121,10 @@ private:
 
     std::unique_ptr<FrameBuffer> _frame_buf;
 
-    void _convertFrameToOutputFormat(::AVFrame * frame, std::vector<uint8_t> & output);
-    int _getFormatBytes();
-    void _togray8(::AVFrame * frame, std::vector<uint8_t> & output);
-    void _torgb32(::AVFrame * frame, std::vector<uint8_t> & output);
+    void _convertFrameToOutputFormat(::AVFrame * frame, std::vector<uint8_t> & output) const;
+    int _getFormatBytes() const;
+    void _togray8(::AVFrame * frame, std::vector<uint8_t> & output) const;
+    void _torgb32(::AVFrame * frame, std::vector<uint8_t> & output) const;
 
     int64_t _findFrameByPts(uint64_t pts);
 
