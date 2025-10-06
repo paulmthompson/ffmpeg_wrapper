@@ -270,6 +270,14 @@ std::vector<uint8_t> VideoDecoder::getFrame(int const desired_frame, bool isFram
 
         is_packet_decoded = false;
 
+        // Skip non-video or invalid-PTS packets before sending to decoder
+        while (_pkt.get() && (_pkt.get()->stream_index != 0 || _pkt.get()->pts == static_cast<int64_t>(AV_NOPTS_VALUE))) {
+            ::av_packet_unref(_pkt.get());
+            ++_pkt;
+        }
+
+        if (!_pkt.get()) break;
+
         libav::avcodec_send_packet(_media, _pkt.get(), [&](const libav::AVFrame &frame) {
             // Tag buffered frames by the decoded frame PTS, not the packet PTS.
             int idx = -1;
@@ -456,7 +464,8 @@ void VideoDecoder::_seekToFrame(int const frame, bool keyframe) {
 
     //flush_decoder(_media, _pkt->stream_index);
     //_pkt.reset(); // Does this flush buffers?
-    auto codecCtx = _media.open_streams.find(_pkt->stream_index);
+    // Always flush the video stream decoder (assumed stream index 0)
+    auto codecCtx = _media.open_streams.find(0);
     if (codecCtx != _media.open_streams.end()) {
         codecCtx->second.flush_buffers();
     }
@@ -473,8 +482,13 @@ void VideoDecoder::_seekToFrame(int const frame, bool keyframe) {
         //libav::av_seek_frame(media,time2,-1,AVSEEK_FLAG_ANY);
         libav::av_seek_frame(_media, time2, -1, AVSEEK_FLAG_BACKWARD);
 
-        _pkt = std::move(
-                _media.begin());// After we seek to a frame, this will read frame, followed by rescaling to appropriate time scale.
+    _pkt = std::move(
+        _media.begin());// After we seek to a frame, this will read frame, followed by rescaling to appropriate time scale.
+    // Advance to first key video packet for a clean decoder state
+    while (_pkt.get() && (_pkt.get()->stream_index != 0 || !(_pkt.get()->flags & AV_PKT_FLAG_KEY))) {
+        ::av_packet_unref(_pkt.get());
+        ++_pkt;
+    }
 
         if (_verbose) {
             if (_pkt.get()->flags & AV_PKT_FLAG_KEY) {
@@ -488,6 +502,11 @@ void VideoDecoder::_seekToFrame(int const frame, bool keyframe) {
         libav::av_seek_frame(_media, time, -1, AVSEEK_FLAG_BACKWARD);
 
         _pkt = std::move(_media.begin());
+        // Advance to first video packet
+        while (_pkt.get() && _pkt.get()->stream_index != 0) {
+            ::av_packet_unref(_pkt.get());
+            ++_pkt;
+        }
     }
 
     {
