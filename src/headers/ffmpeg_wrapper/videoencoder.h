@@ -69,6 +69,9 @@ private:
     bool _verbose{false};
 };
 
+bool mux_video_and_audio(std::string const & video_file, std::string const & audio_file, std::string const & output_file, int video_fps);
+
+
 }// namespace ffmpeg_wrapper
 
 
