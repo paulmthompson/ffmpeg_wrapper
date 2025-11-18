@@ -146,10 +146,19 @@ inline AVIOContext avio_alloc_context(std::function<int(uint8_t *, int)> read,
         return o->read(buf, buf_size);
     };
 
+    // FFmpeg 7 changed the write callback signature to use const uint8_t*
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(61, 0, 100)
+    auto write_wrapper = [](void * opaque, const uint8_t * buf, int buf_size) -> int {
+        auto o = reinterpret_cast<opaque_t *>(opaque);
+        // Cast away const since the user's write function expects non-const
+        return o->write(const_cast<uint8_t *>(buf), buf_size);
+    };
+#else
     auto write_wrapper = [](void * opaque, uint8_t * buf, int buf_size) -> int {
         auto o = reinterpret_cast<opaque_t *>(opaque);
         return o->write(buf, buf_size);
     };
+#endif
 
     auto seek_wrapper = [](void * opaque, int64_t offset, int whence) -> int64_t {
         auto o = reinterpret_cast<opaque_t *>(opaque);
