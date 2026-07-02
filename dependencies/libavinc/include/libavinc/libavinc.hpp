@@ -886,15 +886,30 @@ inline AVCodecContext make_encode_context_h264(AVFormatContext& media,int width,
 return make_encode_context(media,"h264_nvenc",width,height,fps,::AV_PIX_FMT_CUDA);
 }
 */
+/**
+* Return the CUDA hardware frame pool size used for encoder frame transfers.
+* @pre None.
+* @post Returns the configured initial pool size for AVHWFramesContext.
+*/
+inline int cuda_hardware_frame_pool_size() {
+    return 32;
+}
+
 inline void bind_hardware_frames_context(AVCodecContext & ctx, int width, int height, ::AVPixelFormat hw_pix_fmt, ::AVPixelFormat sw_pix_fmt) {
     ::AVBufferRef * hw_device_ctx = nullptr;
     auto err = ::av_hwdevice_ctx_create(&hw_device_ctx, ::AV_HWDEVICE_TYPE_CUDA, NULL, NULL, 0);// Deallocator?
 
     if (err < 0) {
         std::cout << "Failed to create CUDA device with error code " << std::endl;
+        return;
     }
 
     auto hw_frames_ref = ::av_hwframe_ctx_alloc(hw_device_ctx);// Deallocator?
+    if (hw_frames_ref == nullptr) {
+        std::cout << "Failed to allocate CUDA hardware frames context" << std::endl;
+        ::av_buffer_unref(&hw_device_ctx);
+        return;
+    }
 
     ::AVHWFramesContext * frames_ctx;
     frames_ctx = (::AVHWFramesContext *) (hw_frames_ref->data);
@@ -902,12 +917,20 @@ inline void bind_hardware_frames_context(AVCodecContext & ctx, int width, int he
     frames_ctx->sw_format = sw_pix_fmt;
     frames_ctx->width = width;
     frames_ctx->height = height;
+    frames_ctx->initial_pool_size = cuda_hardware_frame_pool_size();
 
-    ::av_hwframe_ctx_init(hw_frames_ref);
+    err = ::av_hwframe_ctx_init(hw_frames_ref);
+    if (err < 0) {
+        std::cout << "Failed to initialize CUDA hardware frames context" << std::endl;
+        ::av_buffer_unref(&hw_frames_ref);
+        ::av_buffer_unref(&hw_device_ctx);
+        return;
+    }
 
     ctx->hw_frames_ctx = ::av_buffer_ref(hw_frames_ref);
 
     ::av_buffer_unref(&hw_frames_ref);
+    ::av_buffer_unref(&hw_device_ctx);
 }
 
 /**

@@ -34,6 +34,10 @@ TEST_CASE("Open encode context is idempotent", "[libavinc]") {
     CHECK(::avcodec_is_open(codec_context.get()) != 0);
 }
 
+TEST_CASE("CUDA hardware frame pool size is configured", "[libavinc]") {
+    CHECK(libav::cuda_hardware_frame_pool_size() == 32);
+}
+
 TEST_CASE("Cached scale context matches one-shot conversion", "[libavinc]") {
     constexpr int width = 64;
     constexpr int height = 48;
