@@ -56,7 +56,9 @@ public:
 
 
 private:
+    void _convertGray8FrameToNv12();
     void _createScaleContext();
+    void _copyGray8InputToFrame(std::vector<uint8_t> const & input_data);
     void _resetScaleContext();
 
     libav::AVFormatContext _media;
@@ -77,6 +79,8 @@ private:
     std::string _file_name{"test.mp4"};
 
     bool _verbose{false};
+    bool _direct_gray8_to_nv12_validated{false};
+    bool _use_direct_gray8_to_nv12{false};
     SwsContext * _scale_context{nullptr};
 };
 

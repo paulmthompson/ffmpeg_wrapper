@@ -47,7 +47,10 @@ extern "C" {
 #define DLLOPT __attribute__((visibility("default")))
 #endif
 
+#include <array>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -553,6 +556,59 @@ inline void convert_frame(AVFrame & frame_in, AVFrame & frame_out) {
     convert_frame(frame_in, frame_out, pContext);
 
     sws_freeContext(pContext);
+}
+
+/**
+* Convert a full-range GRAY8 frame to limited-range NV12 without libswscale.
+* @pre frame_in is GRAY8, frame_out is NV12, dimensions match, and width/height are even.
+* @post Returns 0 on success; frame_out Y is limited-range luma and UV is neutral chroma.
+*/
+inline int convert_gray8_to_nv12_limited_range(AVFrame & frame_in, AVFrame & frame_out) {
+    static constexpr auto limited_range_luma = [] {
+        std::array<uint8_t, 256> table{};
+        for (std::size_t i = 0; i < table.size(); ++i) {
+            table[i] = static_cast<uint8_t>(16 + ((static_cast<int>(i) * 219 + 127) / 255));
+        }
+        return table;
+    }();
+
+    if (!frame_in || !frame_out) {
+        return AVERROR(EINVAL);
+    }
+
+    if (frame_in->format != AV_PIX_FMT_GRAY8 || frame_out->format != AV_PIX_FMT_NV12) {
+        return AVERROR(EINVAL);
+    }
+
+    if (frame_in->width != frame_out->width || frame_in->height != frame_out->height) {
+        return AVERROR(EINVAL);
+    }
+
+    if ((frame_in->width % 2) != 0 || (frame_in->height % 2) != 0) {
+        return AVERROR(EINVAL);
+    }
+
+    if (frame_in->data[0] == nullptr || frame_out->data[0] == nullptr || frame_out->data[1] == nullptr) {
+        return AVERROR(EINVAL);
+    }
+
+    for (int row = 0; row < frame_in->height; ++row) {
+        auto const * src = frame_in->data[0] + row * frame_in->linesize[0];
+        auto * dst = frame_out->data[0] + row * frame_out->linesize[0];
+
+        for (int column = 0; column < frame_in->width; ++column) {
+            dst[column] = limited_range_luma[src[column]];
+        }
+    }
+
+    for (int row = 0; row < frame_out->height / 2; ++row) {
+        auto * dst = frame_out->data[1] + row * frame_out->linesize[1];
+        for (int column = 0; column < frame_out->width; ++column) {
+            dst[column] = 128;
+        }
+    }
+
+    return 0;
 }
 
 

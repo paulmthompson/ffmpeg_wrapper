@@ -85,6 +85,70 @@ TEST_CASE("Cached scale context matches one-shot conversion", "[libavinc]") {
     }
 }
 
+TEST_CASE("Direct GRAY8 to NV12 conversion matches swscale", "[libavinc]") {
+    constexpr int width = 64;
+    constexpr int height = 48;
+
+    auto input = libav::av_frame_alloc();
+    input->format = AV_PIX_FMT_GRAY8;
+    input->width = width;
+    input->height = height;
+
+    auto swscale = libav::av_frame_alloc();
+    swscale->format = AV_PIX_FMT_NV12;
+    swscale->width = width;
+    swscale->height = height;
+
+    auto direct = libav::av_frame_alloc();
+    direct->format = AV_PIX_FMT_NV12;
+    direct->width = width;
+    direct->height = height;
+
+    REQUIRE(::av_frame_get_buffer(input.get(), 32) == 0);
+    REQUIRE(::av_frame_get_buffer(swscale.get(), 32) == 0);
+    REQUIRE(::av_frame_get_buffer(direct.get(), 32) == 0);
+
+    for (int row = 0; row < height; ++row) {
+        auto * row_data = input->data[0] + row * input->linesize[0];
+        for (int column = 0; column < width; ++column) {
+            row_data[column] = static_cast<uint8_t>((row * 17 + column * 31) % 256);
+        }
+    }
+
+    input->data[0][0] = 127;
+
+    libav::convert_frame(input, swscale);
+    REQUIRE(libav::convert_gray8_to_nv12_limited_range(input, direct) == 0);
+
+    CHECK(direct->data[0][0] == 125);
+
+    for (int row = 0; row < height; ++row) {
+        auto const * expected = swscale->data[0] + row * swscale->linesize[0];
+        auto const * actual = direct->data[0] + row * direct->linesize[0];
+        CHECK(std::equal(expected, expected + width, actual));
+    }
+
+    for (int row = 0; row < height / 2; ++row) {
+        auto const * expected = swscale->data[1] + row * swscale->linesize[1];
+        auto const * actual = direct->data[1] + row * direct->linesize[1];
+        CHECK(std::equal(expected, expected + width, actual));
+    }
+}
+
+TEST_CASE("Direct GRAY8 to NV12 rejects unsupported dimensions", "[libavinc]") {
+    auto input = libav::av_frame_alloc();
+    input->format = AV_PIX_FMT_GRAY8;
+    input->width = 63;
+    input->height = 48;
+
+    auto output = libav::av_frame_alloc();
+    output->format = AV_PIX_FMT_NV12;
+    output->width = 63;
+    output->height = 48;
+
+    CHECK(libav::convert_gray8_to_nv12_limited_range(input, output) < 0);
+}
+
 TEST_CASE("Check for Keyframes", "[libavinc]") {
 
     auto mymedia = libav::avformat_open_input(video_filename);

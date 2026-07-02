@@ -8,7 +8,9 @@
 #include "libavutil/pixfmt.h"
 #include "libswscale/swscale.h"
 
+#include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstring>//memcpy
 #include <filesystem>
 #include <functional>
@@ -19,6 +21,47 @@
 
 
 namespace ffmpeg_wrapper {
+
+namespace {
+
+/**
+ * Compare the meaningful bytes in two NV12 frames, ignoring any row padding.
+ * @pre expected and actual are allocated NV12 frames with matching dimensions.
+ * @post Returns true when the Y and UV planes match byte-for-byte.
+ */
+bool nv12FramesEqual(libav::AVFrame const & expected, libav::AVFrame const & actual) {
+    if (!expected || !actual) {
+        return false;
+    }
+
+    if (expected->format != libav::AV_PIX_FMT_NV12 || actual->format != libav::AV_PIX_FMT_NV12) {
+        return false;
+    }
+
+    if (expected->width != actual->width || expected->height != actual->height) {
+        return false;
+    }
+
+    for (int row = 0; row < expected->height; ++row) {
+        auto const * expected_row = expected->data[0] + row * expected->linesize[0];
+        auto const * actual_row = actual->data[0] + row * actual->linesize[0];
+        if (!std::equal(expected_row, expected_row + expected->width, actual_row)) {
+            return false;
+        }
+    }
+
+    for (int row = 0; row < expected->height / 2; ++row) {
+        auto const * expected_row = expected->data[1] + row * expected->linesize[1];
+        auto const * actual_row = actual->data[1] + row * actual->linesize[1];
+        if (!std::equal(expected_row, expected_row + expected->width, actual_row)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+} // namespace
 
 VideoEncoder::VideoEncoder() {
 }
@@ -35,6 +78,53 @@ VideoEncoder::~VideoEncoder() {
 }
 
 /**
+ * Convert the current GRAY8 frame to NV12 using the direct path when validated, otherwise swscale.
+ * @pre _frame contains GRAY8 input data and _frame_nv12 is allocated as NV12 with matching dimensions.
+ * @post _frame_nv12 contains NV12 data ready for hardware transfer.
+ */
+void VideoEncoder::_convertGray8FrameToNv12() {
+    if (_use_direct_gray8_to_nv12) {
+        auto const direct_err = libav::convert_gray8_to_nv12_limited_range(_frame, _frame_nv12);
+        if (direct_err == 0) {
+            if (!_direct_gray8_to_nv12_validated) {
+                auto swscale_frame = libav::av_frame_alloc();
+                swscale_frame->format = libav::AV_PIX_FMT_NV12;
+                swscale_frame->width = _width;
+                swscale_frame->height = _height;
+                auto const buffer_err = ::av_frame_get_buffer(swscale_frame.get(), 32);
+                if (buffer_err < 0) {
+                    _use_direct_gray8_to_nv12 = false;
+                } else {
+                    if (_scale_context != nullptr) {
+                        libav::convert_frame(_frame, swscale_frame, _scale_context);
+                    } else {
+                        libav::convert_frame(_frame, swscale_frame);
+                    }
+
+                    _direct_gray8_to_nv12_validated = true;
+                    if (!nv12FramesEqual(swscale_frame, _frame_nv12)) {
+                        _use_direct_gray8_to_nv12 = false;
+                        _frame_nv12 = std::move(swscale_frame);
+                    }
+                }
+            }
+
+            if (_use_direct_gray8_to_nv12) {
+                return;
+            }
+        }
+
+        _use_direct_gray8_to_nv12 = false;
+    }
+
+    if (_scale_context != nullptr) {
+        libav::convert_frame(_frame, _frame_nv12, _scale_context);
+    } else {
+        libav::convert_frame(_frame, _frame_nv12);
+    }
+}
+
+/**
  * Create the cached scaler context for the current input and NV12 frames.
  * @pre _frame and _frame_nv12 have valid dimensions and pixel formats.
  * @post _scale_context points to a context compatible with the current frame setup, or nullptr if creation failed.
@@ -42,6 +132,19 @@ VideoEncoder::~VideoEncoder() {
 void VideoEncoder::_createScaleContext() {
     _resetScaleContext();
     _scale_context = libav::make_scale_context(_frame, _frame_nv12);
+}
+
+/**
+ * Copy tightly-packed GRAY8 input bytes into the encoder frame.
+ * @pre input_data has at least _width * _height bytes and _frame is an allocated GRAY8 frame.
+ * @post _frame's visible GRAY8 rows contain input_data, respecting any AVFrame row padding.
+ */
+void VideoEncoder::_copyGray8InputToFrame(std::vector<uint8_t> const & input_data) {
+    for (int row = 0; row < _height; ++row) {
+        auto const * src = input_data.data() + static_cast<std::size_t>(row) * _width;
+        auto * dst = _frame->data[0] + row * _frame->linesize[0];
+        std::copy_n(src, _width, dst);
+    }
 }
 
 /**
@@ -66,6 +169,8 @@ void VideoEncoder::setSavePath(std::string full_path) {
 // I should be able to specify the type of context here, software or hardware
 void VideoEncoder::createContext(int width, int height, int fps) {
     _resetScaleContext();
+    _direct_gray8_to_nv12_validated = false;
+    _use_direct_gray8_to_nv12 = false;
 
     _width = width;
     _height = height;
@@ -91,6 +196,8 @@ void VideoEncoder::createContext(int width, int height, int fps) {
 //If not, we need to just make sure that we create any frames necessary for intermediate data receiving.
 void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
     _resetScaleContext();
+    _direct_gray8_to_nv12_validated = false;
+    _use_direct_gray8_to_nv12 = false;
 
     _frame = libav::av_frame_alloc();
     _frame->width = _width;
@@ -120,6 +227,8 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
 
     ::av_frame_get_buffer(_frame.get(), 32);
 
+    _use_direct_gray8_to_nv12 = pixel_fmt == GRAY8 && (_width % 2) == 0 && (_height % 2) == 0;
+
     _createScaleContext();
 }
 
@@ -140,15 +249,11 @@ int VideoEncoder::writeFrameGray8(std::vector<uint8_t> & input_data) {
     int write_frame_err;
     if (!_flush_state) {
         ::av_frame_make_writable(_frame.get());
-        std::memcpy(_frame->data[0], input_data.data(), _height * _width);
+        _copyGray8InputToFrame(input_data);
 
         auto t1 = std::chrono::high_resolution_clock::now();
         //libav::AVFrame nvframe = libav::convert_frame(frame,width,height,::AV_PIX_FMT_NV12);
-        if (_scale_context != nullptr) {
-            libav::convert_frame(_frame, _frame_nv12, _scale_context);
-        } else {
-            libav::convert_frame(_frame, _frame_nv12);
-        }
+        _convertGray8FrameToNv12();
         auto t2 = std::chrono::high_resolution_clock::now();
 
         write_frame_err = libav::hardware_encode(_media, _codecCtx, _frame_nv12, _frame_count);
