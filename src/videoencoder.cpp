@@ -6,6 +6,7 @@
 #include "libavformat/avio.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
+#include "libswscale/swscale.h"
 
 #include <chrono>
 #include <cstring>//memcpy
@@ -29,6 +30,32 @@ VideoEncoder::VideoEncoder(int width, int height, int fps) {
     _flush_state = false;
 }
 
+VideoEncoder::~VideoEncoder() {
+    _resetScaleContext();
+}
+
+/**
+ * Create the cached scaler context for the current input and NV12 frames.
+ * @pre _frame and _frame_nv12 have valid dimensions and pixel formats.
+ * @post _scale_context points to a context compatible with the current frame setup, or nullptr if creation failed.
+ */
+void VideoEncoder::_createScaleContext() {
+    _resetScaleContext();
+    _scale_context = libav::make_scale_context(_frame, _frame_nv12);
+}
+
+/**
+ * Free the cached scaler context.
+ * @pre None.
+ * @post _scale_context is nullptr.
+ */
+void VideoEncoder::_resetScaleContext() {
+    if (_scale_context != nullptr) {
+        ::sws_freeContext(_scale_context);
+        _scale_context = nullptr;
+    }
+}
+
 //https://stackoverflow.com/questions/35530092/c-splitting-an-absolute-file-path/69990972#69990972
 void VideoEncoder::setSavePath(std::string full_path) {
     std::filesystem::path path(full_path);
@@ -38,6 +65,8 @@ void VideoEncoder::setSavePath(std::string full_path) {
 
 // I should be able to specify the type of context here, software or hardware
 void VideoEncoder::createContext(int width, int height, int fps) {
+    _resetScaleContext();
+
     _width = width;
     _height = height;
     _fps = fps;
@@ -61,6 +90,7 @@ void VideoEncoder::createContext(int width, int height, int fps) {
 //If we want to hardware encode, we need to bind the hardware context
 //If not, we need to just make sure that we create any frames necessary for intermediate data receiving.
 void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
+    _resetScaleContext();
 
     _frame = libav::av_frame_alloc();
     _frame->width = _width;
@@ -89,6 +119,8 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
     ::av_frame_get_buffer(_frame_nv12.get(), 32);
 
     ::av_frame_get_buffer(_frame.get(), 32);
+
+    _createScaleContext();
 }
 
 void VideoEncoder::openFile() {
@@ -112,7 +144,11 @@ int VideoEncoder::writeFrameGray8(std::vector<uint8_t> & input_data) {
 
         auto t1 = std::chrono::high_resolution_clock::now();
         //libav::AVFrame nvframe = libav::convert_frame(frame,width,height,::AV_PIX_FMT_NV12);
-        libav::convert_frame(_frame, _frame_nv12);
+        if (_scale_context != nullptr) {
+            libav::convert_frame(_frame, _frame_nv12, _scale_context);
+        } else {
+            libav::convert_frame(_frame, _frame_nv12);
+        }
         auto t2 = std::chrono::high_resolution_clock::now();
 
         write_frame_err = libav::hardware_encode(_media, _codecCtx, _frame_nv12, _frame_count);
@@ -136,7 +172,11 @@ void VideoEncoder::writeFrameRGB0(std::vector<uint32_t> & input_data) {
     ::av_frame_make_writable(_frame.get());
     memcpy(_frame->data[0], input_data.data(), _height * _width * sizeof(uint32_t));
 
-    libav::convert_frame(_frame, _frame_nv12);
+    if (_scale_context != nullptr) {
+        libav::convert_frame(_frame, _frame_nv12, _scale_context);
+    } else {
+        libav::convert_frame(_frame, _frame_nv12);
+    }
 
     libav::hardware_encode(_media, _codecCtx, _frame_nv12, _frame_count);
 

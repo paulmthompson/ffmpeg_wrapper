@@ -4,6 +4,8 @@
 
 #include "libavinc/libavinc.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <string>
 
 static std::string video_filename = "data/test_each_frame_number.mp4";
@@ -30,6 +32,57 @@ TEST_CASE("Open encode context is idempotent", "[libavinc]") {
 
     CHECK(libav::open_encode_context(codec_context) == 0);
     CHECK(::avcodec_is_open(codec_context.get()) != 0);
+}
+
+TEST_CASE("Cached scale context matches one-shot conversion", "[libavinc]") {
+    constexpr int width = 64;
+    constexpr int height = 48;
+
+    auto input = libav::av_frame_alloc();
+    input->format = AV_PIX_FMT_GRAY8;
+    input->width = width;
+    input->height = height;
+
+    auto one_shot = libav::av_frame_alloc();
+    one_shot->format = AV_PIX_FMT_NV12;
+    one_shot->width = width;
+    one_shot->height = height;
+
+    auto cached = libav::av_frame_alloc();
+    cached->format = AV_PIX_FMT_NV12;
+    cached->width = width;
+    cached->height = height;
+
+    REQUIRE(::av_frame_get_buffer(input.get(), 32) == 0);
+    REQUIRE(::av_frame_get_buffer(one_shot.get(), 32) == 0);
+    REQUIRE(::av_frame_get_buffer(cached.get(), 32) == 0);
+
+    for (int row = 0; row < height; ++row) {
+        auto * row_data = input->data[0] + row * input->linesize[0];
+        for (int column = 0; column < width; ++column) {
+            row_data[column] = static_cast<uint8_t>((row * width + column) % 256);
+        }
+    }
+
+    libav::convert_frame(input, one_shot);
+
+    ::SwsContext * scale_context = libav::make_scale_context(input, cached);
+    REQUIRE(scale_context != nullptr);
+
+    libav::convert_frame(input, cached, scale_context);
+    ::sws_freeContext(scale_context);
+
+    for (int row = 0; row < height; ++row) {
+        auto const * expected = one_shot->data[0] + row * one_shot->linesize[0];
+        auto const * actual = cached->data[0] + row * cached->linesize[0];
+        CHECK(std::equal(expected, expected + width, actual));
+    }
+
+    for (int row = 0; row < height / 2; ++row) {
+        auto const * expected = one_shot->data[1] + row * one_shot->linesize[1];
+        auto const * actual = cached->data[1] + row * cached->linesize[1];
+        CHECK(std::equal(expected, expected + width, actual));
+    }
 }
 
 TEST_CASE("Check for Keyframes", "[libavinc]") {

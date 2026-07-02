@@ -21,6 +21,13 @@ public:
     VideoEncoder();
     VideoEncoder(int width, int height, int fps);
 
+    /**
+    * Destroy the encoder and release cached conversion resources.
+    * @pre None.
+    * @post Any cached SwsContext owned by this encoder has been freed.
+    */
+    ~VideoEncoder();
+
     void createContext(int width, int height, int fps);
 
     enum INPUT_PIXEL_FORMAT { NV12,
@@ -49,6 +56,9 @@ public:
 
 
 private:
+    void _createScaleContext();
+    void _resetScaleContext();
+
     libav::AVFormatContext _media;
     libav::AVCodecContext _codecCtx;
     //libav::AVStream;
@@ -67,6 +77,7 @@ private:
     std::string _file_name{"test.mp4"};
 
     bool _verbose{false};
+    SwsContext * _scale_context{nullptr};
 };
 
 bool mux_video_and_audio(std::string const & video_file, std::string const & audio_file, std::string const & output_file, int video_fps);
