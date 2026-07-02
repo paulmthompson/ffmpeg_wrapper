@@ -1,10 +1,36 @@
 
-#include <catch2/catch_test_macros.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "libavinc/libavinc.hpp"
 
+#include <string>
+
 static std::string video_filename = "data/test_each_frame_number.mp4";
+
+TEST_CASE("Open encode context is idempotent", "[libavinc]") {
+    ::AVCodec const * codec = ::avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+    if (!codec) {
+        SKIP("MPEG4 encoder is not available in this FFmpeg build");
+    }
+
+    auto codec_context = libav::AVCodecContext(::avcodec_alloc_context3(codec),
+                                               [](::AVCodecContext * context) {
+                                                   ::avcodec_free_context(&context);
+                                               });
+
+    codec_context->width = 640;
+    codec_context->height = 480;
+    codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
+    codec_context->time_base = AVRational{1, 30};
+    codec_context->framerate = AVRational{30, 1};
+
+    CHECK(libav::open_encode_context(codec_context) == 0);
+    CHECK(::avcodec_is_open(codec_context.get()) != 0);
+
+    CHECK(libav::open_encode_context(codec_context) == 0);
+    CHECK(::avcodec_is_open(codec_context.get()) != 0);
+}
 
 TEST_CASE("Check for Keyframes", "[libavinc]") {
 

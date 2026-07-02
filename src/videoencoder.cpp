@@ -94,7 +94,7 @@ void VideoEncoder::set_pixel_format(INPUT_PIXEL_FORMAT pixel_fmt) {
 void VideoEncoder::openFile() {
 
     std::string full_path = _file_path + _file_name;
-    libav::open_encode_stream_to_write(_media, full_path);
+    libav::open_encode_stream_to_write(_media, _codecCtx, full_path);
 }
 
 void VideoEncoder::closeFile() {

@@ -833,10 +833,60 @@ inline void bind_hardware_frames_context(AVCodecContext & ctx, int width, int he
     ::av_buffer_unref(&hw_frames_ref);
 }
 
-inline void DLLOPT open_encode_stream_to_write(AVFormatContext & media, std::string file_name) {
-    ::avio_open(&media->pb, file_name.c_str(), AVIO_FLAG_WRITE);
+/**
+* Open an encoder context if it has not already been opened.
+* @pre ctx owns a valid AVCodecContext configured with an encoder.
+* @post Returns 0 when ctx is open, otherwise returns the FFmpeg error code from opening the encoder.
+*/
+inline int DLLOPT open_encode_context(AVCodecContext & ctx) {
+    if (!ctx) {
+        return AVERROR(EINVAL);
+    }
 
-    auto success = ::avformat_write_header(media.get(), NULL);
+    if (::avcodec_is_open(ctx.get())) {
+        return 0;
+    }
+
+    ::AVCodec const * codec = ctx->codec;
+    if (!codec) {
+        codec = ::avcodec_find_encoder(ctx->codec_id);
+    }
+
+    if (!codec) {
+        std::cout << "Could not find encoder for codec context" << std::endl;
+        return AVERROR_ENCODER_NOT_FOUND;
+    }
+
+    return ::avcodec_open2(ctx.get(), codec, nullptr);
+}
+
+/**
+* Open an output stream for encoded video.
+* @pre media owns a valid output format context and encoder_ctx has been configured for the stream.
+* @post The encoder is open, stream parameters are refreshed, and the output header has been written when 0 is returned.
+*/
+inline int DLLOPT open_encode_stream_to_write(AVFormatContext & media, AVCodecContext & encoder_ctx, std::string file_name) {
+    auto err = open_encode_context(encoder_ctx);
+    if (err < 0) {
+        std::cout << "Failed to open encoder context" << std::endl;
+        return err;
+    }
+
+    if (media->nb_streams > 0) {
+        err = ::avcodec_parameters_from_context(media->streams[0]->codecpar, encoder_ctx.get());
+        if (err < 0) {
+            std::cout << "Failed to refresh stream codec parameters" << std::endl;
+            return err;
+        }
+    }
+
+    err = ::avio_open(&media->pb, file_name.c_str(), AVIO_FLAG_WRITE);
+    if (err < 0) {
+        std::cout << "Failed to open output file" << std::endl;
+        return err;
+    }
+
+    return ::avformat_write_header(media.get(), nullptr);
 }
 
 inline void DLLOPT bind_hardware_frames_context_nvenc(AVCodecContext & ctx, int width, int height, ::AVPixelFormat sw_pix_fmt) {
@@ -852,11 +902,6 @@ inline void DLLOPT encode_enter_drain_mode(AVFormatContext & media, AVCodecConte
 }
 
 inline int DLLOPT hardware_encode_flush(AVFormatContext & media, AVCodecContext & ctx, int frame_count) {
-
-    std::string const codec_name = "h264_nvenc";
-    ::AVCodec const * codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
-    ::avcodec_open2(ctx.get(), codec, NULL);// Why does this have to happen with every write?
-
     auto pkt = av_packet_alloc();
 
     auto err = ::avcodec_receive_packet(ctx.get(), pkt.get());
@@ -897,10 +942,6 @@ inline int DLLOPT hardware_encode(AVFormatContext & media, AVCodecContext & ctx,
     if (err) {
         std::cout << "Could not get hardware frame buffer";
     }
-
-    std::string const codec_name = "h264_nvenc";
-    ::AVCodec const * codec = ::avcodec_find_encoder_by_name(codec_name.c_str());
-    ::avcodec_open2(ctx.get(), codec, NULL);// Why does this have to happen with every write?
 
     err = ::av_hwframe_transfer_data(hw_frame, sw_frame.get(), 0);
     if (err) {
