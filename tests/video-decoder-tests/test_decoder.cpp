@@ -1,12 +1,22 @@
 
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/benchmark/catch_benchmark.hpp>
-
 #include "ffmpeg_wrapper/videodecoder.h"
 
+#include <catch2/benchmark/catch_benchmark.hpp>
+#include <catch2/catch_test_macros.hpp>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include <string>
+#include <vector>
+
+namespace {
+
+constexpr int tolerance = 7; // Linux machine needs a tolerance of 7
+constexpr std::size_t max_printed_differences = 20;
 
 inline auto load_img = [](std::string filename){
     std::ifstream stream(filename, std::ios::binary);
@@ -26,22 +36,66 @@ inline void save_decoded_image_as_binary(const std::vector<uint8_t>& decoded_ima
     file.write(reinterpret_cast<const char*>(decoded_image.data()), decoded_image.size());
 }
 
-size_t calculate_pixel_difference(const std::vector<uint8_t>& original, const std::vector<uint8_t>& decoded, int tolerance) {
-    size_t diff_count = 0;
-    for(size_t i = 0; i < original.size(); ++i) {
-        if(std::abs(original[i] - decoded[i]) > tolerance) {
-            std::cout 
-            << "Difference at index " 
-            << i 
-            << ": " 
-            << static_cast<int>(original[i]) 
-            << " vs " 
-            << static_cast<int>(decoded[i]) 
-            << std::endl;
+/**
+ * Calculate the number of pixels whose absolute difference exceeds a tolerance.
+ * @pre original and decoded contain comparable image buffers.
+ * @post Returns the number of elements that differ by more than tolerance and prints a bounded diagnostic summary.
+ */
+std::size_t calculate_pixel_difference(const std::vector<uint8_t>& original, const std::vector<uint8_t>& decoded, int tolerance) {
+    std::size_t diff_count = 0;
+    std::size_t max_difference_index = 0;
+    int max_difference = 0;
+
+    auto const compared_size = std::min(original.size(), decoded.size());
+    for(std::size_t i = 0; i < compared_size; ++i) {
+        auto const original_value = static_cast<int>(original[i]);
+        auto const decoded_value = static_cast<int>(decoded[i]);
+        auto const difference = std::abs(original_value - decoded_value);
+
+        if(difference > tolerance) {
+            if (diff_count < max_printed_differences) {
+                std::cout
+                    << "Difference at index "
+                    << i
+                    << ": "
+                    << original_value
+                    << " vs "
+                    << decoded_value
+                    << " (abs diff "
+                    << difference
+                    << ")"
+                    << std::endl;
+            }
+
             ++diff_count;
+
+            if (difference > max_difference) {
+                max_difference = difference;
+                max_difference_index = i;
+            }
         }
     }
-    std::cout << "Number of different elements: " << diff_count << std::endl;
+
+    diff_count += original.size() > decoded.size()
+        ? original.size() - decoded.size()
+        : decoded.size() - original.size();
+
+    if (diff_count > max_printed_differences) {
+        std::cout
+            << "Suppressed "
+            << diff_count - max_printed_differences
+            << " additional differences."
+            << std::endl;
+    }
+
+    std::cout
+        << "Number of different elements: "
+        << diff_count
+        << "; max absolute difference: "
+        << max_difference
+        << " at index "
+        << max_difference_index
+        << std::endl;
 
     if (diff_count > 0) {
         save_decoded_image_as_binary(decoded, "data/decoded_image.bin");
@@ -49,7 +103,6 @@ size_t calculate_pixel_difference(const std::vector<uint8_t>& original, const st
     return diff_count;
 }
 
-static const int tolerance = 7; // Linux machine needs a tolerance of 7
 static auto frame_0 = load_img("data/frame_0.bin");
 static auto frame_100 = load_img("data/frame_100.bin");
 static auto frame_200 = load_img("data/frame_200.bin");
@@ -58,6 +111,8 @@ static auto frame_400 = load_img("data/frame_400.bin");
 static auto frame_500 = load_img("data/frame_500.bin"); //keyframe
 
 static std::string video_filename = "data/test_each_frame_number.mp4";
+
+}
 
 TEST_CASE("VideoDecoder object creation", "[ffmpeg_wrapper]") {
 
