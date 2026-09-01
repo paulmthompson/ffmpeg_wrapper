@@ -1,21 +1,17 @@
 #ifndef VIDEOENCODER_H
 #define VIDEOENCODER_H
 
+#include "ffmpeg_wrapper_export.h"
 #include "libavinc/libavinc.hpp"
 
 #include <stdint.h>
 #include <string>
 #include <vector>
 
-#if defined _WIN32 || defined __CYGWIN__
-#define DLLOPT __declspec(dllexport)
-#else
-#define DLLOPT __attribute__((visibility("default")))
-#endif
 
 namespace ffmpeg_wrapper {
 
-class DLLOPT VideoEncoder {
+class FFMPEG_WRAPPER_EXPORT VideoEncoder {
 
 public:
     VideoEncoder();
@@ -84,7 +80,7 @@ private:
     SwsContext * _scale_context{nullptr};
 };
 
-bool mux_video_and_audio(std::string const & video_file, std::string const & audio_file, std::string const & output_file, int video_fps);
+FFMPEG_WRAPPER_EXPORT bool mux_video_and_audio(std::string const & video_file, std::string const & audio_file, std::string const & output_file, int video_fps);
 
 
 }// namespace ffmpeg_wrapper

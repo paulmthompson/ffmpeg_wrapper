@@ -1,6 +1,7 @@
 #ifndef VIDEODECODER_H
 #define VIDEODECODER_H
 
+#include "ffmpeg_wrapper_export.h"
 #include "libavinc/libavinc.hpp"
 
 #include "libavformat/avformat.h"
@@ -12,12 +13,6 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-
-#if defined _WIN32 || defined __CYGWIN__
-#define DLLOPT __declspec(dllexport)
-#else
-#define DLLOPT __attribute__((visibility("default")))
-#endif
 
 namespace ffmpeg_wrapper {
 
@@ -45,7 +40,7 @@ private:
     bool _verbose{false};
 };
 
-class DLLOPT VideoDecoder {
+class FFMPEG_WRAPPER_EXPORT VideoDecoder {
 
 public:
     VideoDecoder();
